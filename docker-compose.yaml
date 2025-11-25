@@ -1,0 +1,78 @@
+version: '3.8'
+
+x-php-tmpl: &php-tmpl
+  image: tinvest-analytics-backend:latest
+  restart: always
+  tty: true
+  working_dir: /var/www/application
+  env_file:
+    - .env
+  volumes:
+    - .:/var/www/application
+
+services:
+  # PHP FPM Backend
+  tinvest-analytics-backend:
+    <<: *php-tmpl
+    container_name: tinvest-analytics-backend
+
+  # Nginx Service
+  tinvest-analytics-nginx:
+    image: nginx:alpine
+    container_name: tinvest-analytics-nginx
+    restart: always
+    tty: true
+    environment:
+      - "APPLICATION_UPSTREAM=tinvest-analytics-backend:9000"
+    volumes:
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+      - ./docker/nginx/templates/:/etc/nginx/templates/
+      - ./public/:/var/www/application/public/
+    ports:
+      - "9000:9000"
+      - "443:443"
+
+  # MySQL Service
+  tinvest-analytics-mysql:
+    image: library/mysql:8.0
+    container_name: tinvest-analytics-mysql
+    restart: always
+    tty: true
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USERNAME}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
+      SERVICE_NAME: mysql
+    volumes:
+      - applicationMysqlData:/var/lib/mysql
+      - applicationMysqlFiles:/var/lib/mysql-files
+
+  # Queue Service
+  tinvest-analytics-beanstalkd:
+    image: schickling/beanstalkd:latest
+    container_name: tinvest-analytics-beanstalkd
+    restart: always
+    tty: true
+    ports:
+      - "11300:11300"
+
+  # Memcached Service
+  tinvest-analytics-memcached:
+    image: memcached:1.6-alpine
+    container_name: tinvest-analytics-memcached
+    restart: always
+    tty: true
+    ports:
+      - "11211:11211"
+    environment:
+      SERVICE_NAME: memcached
+
+# Docker Volumes
+volumes:
+  applicationMysqlData:
+    driver: local
+  applicationMysqlFiles:
+    driver: local

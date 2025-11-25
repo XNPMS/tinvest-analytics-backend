@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace System\Repository;
+
+use Illuminate\Database\Eloquent\Builder as QueryBuilder;
+
+abstract readonly class AbstractEloquentRepository
+{
+    protected string $model;
+
+    /**
+     * Создает новый экземпляр запроса
+     */
+    public function createQueryBuilder(): QueryBuilder
+    {
+        return call_user_func([$this->getModelClass(), 'query']);
+    }
+
+    /**
+     * Возвращает FQCN класса модели для создания запроса из репозитория
+     */
+    abstract public function getModelClass(): string;
+}

@@ -5,3 +5,6 @@
 /coveralls-upload.json
 /phpunit.xml
 /vendor/
+
+.env
+/keys/*
