@@ -15,11 +15,11 @@ abstract readonly class AbstractEloquentRepository
      */
     public function createQueryBuilder(): QueryBuilder
     {
-        return call_user_func([$this->getModelClass(), 'query']);
+        return call_user_func([$this->getEntityClass(), 'query']);
     }
 
     /**
      * Возвращает FQCN класса модели для создания запроса из репозитория
      */
-    abstract public function getModelClass(): string;
+    abstract public function getEntityClass(): string;
 }

@@ -7,8 +7,7 @@ namespace Auth\Config;
 final readonly class CookieConfig
 {
     public function __construct(
-        public string $refreshCookieName,
-        public string $refreshCookiePath,
+        public string $cookiePath,
         public bool $secure,
         public bool $httpOnly,
         public string $refreshCookieSameSite,

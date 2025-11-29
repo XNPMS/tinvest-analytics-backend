@@ -31,9 +31,7 @@ class ConfigProvider
     public function getDependencies(): array
     {
         return [
-            'invokables' => [
-                Handler\PingHandler::class => Handler\PingHandler::class,
-            ],
+            'invokables' => [],
             'factories'  => [],
         ];
     }

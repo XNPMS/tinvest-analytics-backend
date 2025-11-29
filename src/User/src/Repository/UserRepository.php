@@ -9,8 +9,16 @@ use User\Entity\User;
 
 readonly class UserRepository extends AbstractEloquentRepository
 {
-    public function getModelClass(): string
+    public function getEntityClass(): string
     {
         return User::class;
+    }
+
+    public function getUserById(int $userId): ?User
+    {
+        /** @var User */
+        return $this->createQueryBuilder()
+            ->where('id', '=', $userId)
+            ?->first();
     }
 }

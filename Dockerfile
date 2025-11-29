@@ -20,13 +20,13 @@ RUN apk update && apk add --no-cache \
         libmemcached-dev \
         linux-headers \
         mysql-dev \
-    && pecl install memcached xhprof \
-    && docker-php-ext-enable memcached xhprof \
+    && pecl install memcached \
+    && docker-php-ext-enable memcached \
     && docker-php-ext-install pdo pdo_mysql sockets \
     && apk del .build-deps
 
 # Установка Composer
-# RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 COPY composer.json composer.lock ./
 

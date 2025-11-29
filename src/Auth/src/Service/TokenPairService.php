@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Auth\Service;
 
 use Auth\Config\OAuthConfig;
+use Auth\Exception\InvalidAccessTokenException;
 use Lcobucci\Clock\SystemClock;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Key\InMemory;
@@ -13,9 +14,8 @@ use Lcobucci\JWT\Token;
 use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Ramsey\Uuid\Uuid;
-use Random\RandomException;
 
-readonly class TokenService
+readonly class TokenPairService
 {
     private Configuration $jwtConfig;
 
@@ -42,8 +42,8 @@ readonly class TokenService
             ->expiresAt($exp)
             ->identifiedBy(Uuid::uuid4()->toString());
 
-        foreach ($claims as $k => $v) {
-            $builder = $builder->withClaim($k, $v);
+        foreach ($claims as $claim) {
+            $builder = $builder->relatedTo($claim);
         }
 
         $token = $builder->getToken($this->jwtConfig->signer(), $this->jwtConfig->signingKey());
@@ -51,6 +51,9 @@ readonly class TokenService
         return $token->toString();
     }
 
+    /**
+     * @throws InvalidAccessTokenException
+     */
     public function validateAccessToken(string $jwt): Token
     {
         $token = $this->jwtConfig->parser()->parse($jwt);
@@ -61,18 +64,29 @@ readonly class TokenService
         ];
 
         if (!$this->jwtConfig->validator()->validate($token, ...$constraints)) {
-            // надо убрать тут выброс
-            throw new \RuntimeException('Invalid token');
+            throw new InvalidAccessTokenException('Invalid access token');
         }
 
         return $token;
     }
 
-    /**
-     * @throws RandomException
-     */
     public function createRefreshTokenRaw(): string
     {
-        return bin2hex((md5(random_bytes(64))));
+        return rtrim(strtr(base64_encode(random_bytes(128)), '+/', '-_'), '=');
+    }
+
+    public function shouldRefreshAccessToken(Token $token): bool
+    {
+        try {
+            $expiresAt = $token->claims()->get('exp');
+            $now = new \DateTimeImmutable();
+
+            $tokenLifetime = $expiresAt->getTimestamp() - $token->claims()->get('iat')->getTimestamp();
+            $timeLeft = $expiresAt->getTimestamp() - $now->getTimestamp();
+
+            return ($timeLeft / $tokenLifetime) < 0.3;
+        } catch (\RuntimeException $e) {
+            return true;
+        }
     }
 }

@@ -11,7 +11,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 use function time;
 
-final class PingHandler implements RequestHandlerInterface
+final readonly class PingHandler implements RequestHandlerInterface
 {
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
