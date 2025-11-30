@@ -18,7 +18,7 @@ final class CreateUsersTable extends Migration
             $table->increments('id');
             $table->string('email', 191)->unique();
             $table->string('password_hash', 255);
-            $table->string('t_token', 255)->unique();
+            $table->string('t_token', 255)->unique()->nullable();
             $table->timestamps();
         });
 

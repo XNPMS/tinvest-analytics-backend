@@ -29,4 +29,14 @@ class User extends Model
     {
         return (string)$this->getAttributeFromArray('email');
     }
+
+    public function setEmail(string $email): void
+    {
+        $this->setAttribute('email', $email);
+    }
+
+    public function setPassword(string $password): void
+    {
+        $this->setAttribute('password_hash', password_hash($password, PASSWORD_DEFAULT));
+    }
 }

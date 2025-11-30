@@ -21,7 +21,7 @@ readonly class RefreshTokenService
 
         $refreshTokenEntity->setUserId($userId);
         $refreshTokenEntity->setRefreshToken(hash('sha256', $refreshToken));
-        $refreshTokenEntity->setExpiresAt((new \DateTime())->modify(sprintf('+%d seconds', $refreshTokenTtl)));
+        $refreshTokenEntity->setExpiresAt((new \DateTime())->setTimestamp(time() + $refreshTokenTtl));
         $refreshTokenEntity->save();
 
         return $refreshTokenEntity;

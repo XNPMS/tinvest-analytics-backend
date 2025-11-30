@@ -37,9 +37,9 @@ class RefreshToken extends Model
         return $this->getAttributeFromArray('revoked') === 1;
     }
 
-    public function getExpiresAt(): int
+    public function getExpiresAt(): string
     {
-        return (int)$this->getAttributeFromArray('expires_at');
+        return (string)$this->getAttributeFromArray('expires_at');
     }
 
     public function setUserId(int $userId): void

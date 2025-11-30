@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Auth;
 
+use Auth\Config\CookieConfig;
 use Auth\Config\OAuthConfig;
+use Auth\Factory\CookieConfigFactory;
 use Auth\Factory\OAuthConfigFactory;
+use Auth\InputFilter\RegisterUserInputFilter;
+use System\Factory\InputFilterAbstractFactory;
 
 class ConfigProvider
 {
@@ -31,6 +35,8 @@ class ConfigProvider
             'invokables' => [],
             'factories'  => [
                 OAuthConfig::class => OAuthConfigFactory::class,
+                CookieConfig::class => CookieConfigFactory::class,
+                RegisterUserInputFilter::class => InputFilterAbstractFactory::class,
             ],
         ];
     }

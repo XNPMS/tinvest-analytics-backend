@@ -7,14 +7,15 @@ namespace Auth\Service;
 use Auth\DTO\TokenPair;
 use Auth\Entity\RefreshToken;
 use Auth\Exception\InvalidRefreshTokenException;
+use Auth\Exception\UserSearchException;
 use User\Entity\User;
-use User\Repository\UserRepository;
+use User\Service\UserService;
 
 readonly class AuthService
 {
     public function __construct(
         private TokenPairService $tokenPairService,
-        private UserRepository $userRepository,
+        private UserService $userService,
         private RefreshTokenService $refreshTokenService,
     ) {
     }
@@ -26,12 +27,13 @@ readonly class AuthService
 
     /**
      * @throws InvalidRefreshTokenException
+     * @throws UserSearchException
      */
     public function refreshWithRaw(string $rawRefresh): TokenPair
     {
         $refreshToken = $this->validateRefreshToken($rawRefresh);
-        if (!$user = $this->userRepository->getUserById($refreshToken->getUserId())) {
-            throw new \RuntimeException('User not found');
+        if (!$user = $this->userService->getUserById($refreshToken->getUserId())) {
+            throw new UserSearchException('User not found');
         }
 
         $refreshToken->revoke();

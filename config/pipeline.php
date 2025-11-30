@@ -6,6 +6,7 @@ use Auth\Middleware\JsonOnlyProblemDetailsMiddleware;
 use Laminas\Stratigility\Middleware\ErrorHandler;
 use Mezzio\Application;
 use Mezzio\Handler\NotFoundHandler;
+use Mezzio\Helper\BodyParams\BodyParamsMiddleware;
 use Mezzio\Helper\ServerUrlMiddleware;
 use Mezzio\Helper\UrlHelperMiddleware;
 use Mezzio\MiddlewareFactory;
@@ -26,6 +27,7 @@ return function (Application $app, MiddlewareFactory $factory, ContainerInterfac
     // all Exceptions.
     // $app->pipe(ErrorHandler::class);
 
+    $app->pipe(BodyParamsMiddleware::class);
     $app->pipe(ProblemDetailsMiddleware::class);
     $app->pipe(JsonOnlyProblemDetailsMiddleware::class);
     $app->pipe(ServerUrlMiddleware::class);

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace System;
 
 use Laminas\ServiceManager\AbstractFactory\ReflectionBasedAbstractFactory;
+use System\Factory\InputFilterMessageResolverFactory;
+use System\Service\InputFilterMessageResolver;
 
 class ConfigProvider
 {
@@ -29,7 +31,9 @@ class ConfigProvider
         return [
             'abstract_factories' => [ReflectionBasedAbstractFactory::class],
             'invokables' => [],
-            'factories'  => [],
+            'factories'  => [
+                InputFilterMessageResolver::class => InputFilterMessageResolverFactory::class,
+            ],
         ];
     }
 }

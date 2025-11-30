@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace Auth\Middleware;
 
 use Auth\DTO\Identity;
-use Auth\DTO\TokenPair;
 use Auth\Exception\InvalidAccessTokenException;
 use Auth\Service\AuthService;
 use Auth\Service\CookieBuilder;
 use Auth\Service\TokenPairService;
-use Lcobucci\JWT\Token;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -19,9 +17,6 @@ use System\Exception\UnauthorizedException;
 
 final readonly class AuthMiddleware implements MiddlewareInterface
 {
-    private const ACCESS_TOKEN = 'access_token';
-    private const REFRESH_TOKEN = 'refresh_token';
-
     public function __construct(
         private AuthService $authService,
         private TokenPairService $tokenPairService,
@@ -36,9 +31,9 @@ final readonly class AuthMiddleware implements MiddlewareInterface
     {
         $cookies = $request->getCookieParams();
 
-        if ($accessToken = $cookies[self::ACCESS_TOKEN] ?? null) {
+        if ($accessToken = $cookies[CookieBuilder::ACCESS_TOKEN] ?? null) {
             try {
-                if ($token = $this->validateAccessToken($request, $accessToken)) {
+                if ([$token, $request] = $this->validateAccessToken($request, $accessToken)) {
                     if ($this->tokenPairService->shouldRefreshAccessToken($token)) {
                         return $this->handleRefreshTokenFlow($request, $handler, $cookies);
                     }
@@ -61,7 +56,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
         RequestHandlerInterface $handler,
         array $cookies,
     ): ResponseInterface {
-        if (!$refreshToken = $cookies[self::REFRESH_TOKEN] ?? null) {
+        if (!$refreshToken = $cookies[CookieBuilder::REFRESH_TOKEN] ?? null) {
             throw UnauthorizedException::create('Authentication is required');
         }
 
@@ -69,7 +64,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
             $tokenPair = $this->authService->refreshWithRaw($refreshToken);
             $setCookieHeader = $this->cookieBuilder->buildTokenPairCookies($tokenPair);
 
-            if (!$this->validateAccessToken($request, $tokenPair->accessToken)) {
+            if (![$token, $request] = $this->validateAccessToken($request, $tokenPair->accessToken)) {
                 return $handler->handle($request);
             }
 
@@ -86,14 +81,15 @@ final readonly class AuthMiddleware implements MiddlewareInterface
     /**
      * @throws InvalidAccessTokenException
      */
-    private function validateAccessToken(ServerRequestInterface $request, string $accessToken): ?Token
+    private function validateAccessToken(ServerRequestInterface $request, string $accessToken): ?array
     {
         if ($token = $this->tokenPairService->validateAccessToken($accessToken)) {
             $claims = $token->claims();
             if ($userEmail = $claims->get('sub')) {
-                $request->withAttribute('identity', new Identity($userEmail, $claims));
-
-                return $token;
+                return [$token, $request->withAttribute(
+                    'identity',
+                    new Identity($userEmail, $claims)
+                )];
             }
         }
 

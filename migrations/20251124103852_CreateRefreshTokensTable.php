@@ -22,7 +22,7 @@ final class CreateRefreshTokensTable extends Migration
             $table->timestamp('expires_at');
             $table->timestamps();
 
-            $table->foreign('user_id')
+            $table->foreign('user_id', 'fk_refresh_tokens_user_id')
                 ->references('id')
                 ->on('users')
                 ->onDelete('cascade')
@@ -43,11 +43,11 @@ final class CreateRefreshTokensTable extends Migration
     public function down(): void
     {
         Capsule::schema()->table(RefreshToken::TABLE, function (Blueprint $table) {
-            $table->dropForeign(['user_id']);
+            $table->dropForeign('fk_refresh_tokens_user_id');
         });
 
         Capsule::schema()->getConnection()->statement(
-            sprintf('DROP INDEX idx_refresh_tokens_active ON %s', self::TABLE)
+            sprintf('DROP INDEX idx_refresh_tokens_active ON %s', RefreshToken::TABLE)
         );
 
         Capsule::schema()->drop(RefreshToken::TABLE);

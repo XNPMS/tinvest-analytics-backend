@@ -21,4 +21,12 @@ readonly class UserRepository extends AbstractEloquentRepository
             ->where('id', '=', $userId)
             ?->first();
     }
+
+    public function getUserByEmail(string $email): ?User
+    {
+        /** @var User */
+        return $this->createQueryBuilder()
+            ->where('email', '=', $email)
+            ->first();
+    }
 }
