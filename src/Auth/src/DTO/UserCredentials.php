@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Auth\DTO;
 
-final readonly class RegisterUserData
+final readonly class UserCredentials
 {
     public function __construct(
         public string $email,

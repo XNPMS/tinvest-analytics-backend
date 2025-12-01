@@ -41,4 +41,12 @@ readonly class RefreshTokenService
     {
         return $this->refreshTokenRepository->revokeAllRefreshTokensForUser($userId);
     }
+
+    public function invalidateRefreshToken(string $token): void
+    {
+        if ($refreshToken = $this->getRefreshTokenByRefreshToken($token)) {
+            $refreshToken->revoke();
+            $refreshToken->save();
+        }
+    }
 }

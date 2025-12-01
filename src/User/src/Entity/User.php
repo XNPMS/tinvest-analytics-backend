@@ -39,4 +39,9 @@ class User extends Model
     {
         $this->setAttribute('password_hash', password_hash($password, PASSWORD_DEFAULT));
     }
+
+    public function getPasswordHash(): string
+    {
+        return (string)$this->getAttributeFromArray('password_hash');
+    }
 }

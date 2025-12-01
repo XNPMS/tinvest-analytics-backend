@@ -14,9 +14,12 @@ use Lcobucci\JWT\Token;
 use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Ramsey\Uuid\Uuid;
+use Random\RandomException;
 
 readonly class TokenPairService
 {
+    private const LENGTH_REFRESH_TOKEN = 64;
+    private const TOKEN_LIFETIME_REFRESH_RATIO = 0.3;
     private Configuration $jwtConfig;
 
     public function __construct(public OAuthConfig $oauthConfig)
@@ -70,9 +73,12 @@ readonly class TokenPairService
         return $token;
     }
 
+    /**
+     * @throws RandomException
+     */
     public function createRefreshTokenRaw(): string
     {
-        return rtrim(strtr(base64_encode(random_bytes(128)), '+/', '-_'), '=');
+        return rtrim(strtr(base64_encode(random_bytes(self::LENGTH_REFRESH_TOKEN)), '+/', '-_'), '=');
     }
 
     public function shouldRefreshAccessToken(Token $token): bool
@@ -84,7 +90,7 @@ readonly class TokenPairService
             $tokenLifetime = $expiresAt->getTimestamp() - $token->claims()->get('iat')->getTimestamp();
             $timeLeft = $expiresAt->getTimestamp() - $now->getTimestamp();
 
-            return ($timeLeft / $tokenLifetime) < 0.3;
+            return ($timeLeft / $tokenLifetime) < self::TOKEN_LIFETIME_REFRESH_RATIO;
         } catch (\RuntimeException $e) {
             return true;
         }

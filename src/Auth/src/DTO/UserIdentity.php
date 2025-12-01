@@ -6,7 +6,7 @@ namespace Auth\DTO;
 
 use Lcobucci\JWT\Token\DataSet;
 
-final readonly class Identity
+final readonly class UserIdentity
 {
     public function __construct(
         public ?string $email = null,

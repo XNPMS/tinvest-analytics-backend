@@ -29,7 +29,7 @@ class RefreshToken extends Model
 
     public function revoke(): void
     {
-        $this->setAttribute(true, 'revoked');
+        $this->setAttribute('revoked', true);
     }
 
     public function isRevoked(): bool

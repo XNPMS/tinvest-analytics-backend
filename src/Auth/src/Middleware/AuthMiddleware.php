@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Auth\Middleware;
 
-use Auth\DTO\Identity;
+use Auth\DTO\UserIdentity;
 use Auth\Exception\InvalidAccessTokenException;
 use Auth\Service\AuthService;
-use Auth\Service\CookieBuilder;
+use Auth\Service\CookieManager;
 use Auth\Service\TokenPairService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -20,7 +20,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
     public function __construct(
         private AuthService $authService,
         private TokenPairService $tokenPairService,
-        private CookieBuilder $cookieBuilder,
+        private CookieManager $cookieManager,
     ) {
     }
 
@@ -31,7 +31,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
     {
         $cookies = $request->getCookieParams();
 
-        if ($accessToken = $cookies[CookieBuilder::ACCESS_TOKEN] ?? null) {
+        if ($accessToken = $cookies[CookieManager::ACCESS_TOKEN] ?? null) {
             try {
                 if ([$token, $request] = $this->validateAccessToken($request, $accessToken)) {
                     if ($this->tokenPairService->shouldRefreshAccessToken($token)) {
@@ -56,13 +56,13 @@ final readonly class AuthMiddleware implements MiddlewareInterface
         RequestHandlerInterface $handler,
         array $cookies,
     ): ResponseInterface {
-        if (!$refreshToken = $cookies[CookieBuilder::REFRESH_TOKEN] ?? null) {
+        if (!$refreshToken = $cookies[CookieManager::REFRESH_TOKEN] ?? null) {
             throw UnauthorizedException::create('Authentication is required');
         }
 
         try {
             $tokenPair = $this->authService->refreshWithRaw($refreshToken);
-            $setCookieHeader = $this->cookieBuilder->buildTokenPairCookies($tokenPair);
+            $setCookieHeader = $this->cookieManager->buildTokenPairCookies($tokenPair);
 
             if (![$token, $request] = $this->validateAccessToken($request, $tokenPair->accessToken)) {
                 return $handler->handle($request);
@@ -88,7 +88,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
             if ($userEmail = $claims->get('sub')) {
                 return [$token, $request->withAttribute(
                     'identity',
-                    new Identity($userEmail, $claims)
+                    new UserIdentity($userEmail, $claims)
                 )];
             }
         }

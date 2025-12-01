@@ -4,20 +4,47 @@ declare(strict_types=1);
 
 namespace Auth\Handler;
 
+use Auth\Exception\AuthenticationFailedException;
+use Auth\Exception\UserSearchException;
+use Auth\InputFilter\LoginUserInputFilter;
+use Auth\Service\AuthService;
+use Auth\Service\CookieManager;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\RequestHandlerInterface;
+use System\Exception\BadRequestException;
+use System\Exception\NotFoundException;
+use System\Exception\UnauthorizedException;
 
-final readonly class LoginUserHandler implements RequestHandlerInterface
+final readonly class LoginUserHandler extends BaseAuthHandler
 {
     public function __construct(
-
+        private AuthService $authService,
+        private LoginUserInputFilter $inputFilter,
+        private CookieManager $cookieManager,
     ) {
     }
 
+    /**
+     * @throws NotFoundException
+     * @throws UnauthorizedException
+     * @throws BadRequestException
+     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return new JsonResponse([]);
+        try {
+            $user = $this->authService->authenticate(
+                $this->validate($this->inputFilter, $request->getParsedBody())
+            );
+        } catch (UserSearchException $e) {
+            throw NotFoundException::create($e->getMessage());
+        } catch (AuthenticationFailedException $e) {
+            throw UnauthorizedException::create($e->getMessage());
+        }
+
+        return $this->cookieManager->addTokenPairToResponse(
+            $this->authService->issueTokenPair($user),
+            new JsonResponse($this->successPayload($user)),
+        );
     }
 }

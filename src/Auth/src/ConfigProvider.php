@@ -8,6 +8,7 @@ use Auth\Config\CookieConfig;
 use Auth\Config\OAuthConfig;
 use Auth\Factory\CookieConfigFactory;
 use Auth\Factory\OAuthConfigFactory;
+use Auth\InputFilter\LoginUserInputFilter;
 use Auth\InputFilter\RegisterUserInputFilter;
 use System\Factory\InputFilterAbstractFactory;
 
@@ -37,6 +38,7 @@ class ConfigProvider
                 OAuthConfig::class => OAuthConfigFactory::class,
                 CookieConfig::class => CookieConfigFactory::class,
                 RegisterUserInputFilter::class => InputFilterAbstractFactory::class,
+                LoginUserInputFilter::class => InputFilterAbstractFactory::class,
             ],
         ];
     }

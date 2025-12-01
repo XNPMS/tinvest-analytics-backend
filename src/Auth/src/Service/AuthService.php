@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Auth\Service;
 
 use Auth\DTO\TokenPair;
+use Auth\DTO\UserCredentials;
 use Auth\Entity\RefreshToken;
+use Auth\Exception\AuthenticationFailedException;
 use Auth\Exception\InvalidRefreshTokenException;
 use Auth\Exception\UserSearchException;
+use Random\RandomException;
 use User\Entity\User;
 use User\Service\UserService;
 
@@ -28,6 +31,7 @@ readonly class AuthService
     /**
      * @throws InvalidRefreshTokenException
      * @throws UserSearchException
+     * @throws RandomException
      */
     public function refreshWithRaw(string $rawRefresh): TokenPair
     {
@@ -41,6 +45,9 @@ readonly class AuthService
         return $this->generateTokenPair($user);
     }
 
+    /**
+     * @throws RandomException
+     */
     private function generateTokenPair(User $user): TokenPair
     {
         $claims = [
@@ -79,5 +86,22 @@ readonly class AuthService
         }
 
         return $token;
+    }
+
+    /**
+     * @throws UserSearchException
+     * @throws AuthenticationFailedException
+     */
+    public function authenticate(UserCredentials $userData): User
+    {
+        if (!$user = $this->userService->getUserByEmail($userData->email)) {
+            throw new UserSearchException('User not found');
+        }
+
+        if (!password_verify($userData->password, $user->getPasswordHash())) {
+            throw new AuthenticationFailedException('Email or password is incorrect');
+        }
+
+        return $user;
     }
 }
