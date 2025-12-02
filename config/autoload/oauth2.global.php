@@ -14,9 +14,8 @@ return [
         ],
         'cookie' => [
             'secure' => true,
-            'httpOnly' => true,
+            'http_only' => true,
             'path' => (string)getenv('COOKIE_PATH'),
-            'sameSite' => (string)getenv('REFRESH_COOKIE_SAMESITE'),
         ],
     ],
 ];

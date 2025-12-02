@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Auth\Handler;
 
 use Auth\Exception\AuthenticationFailedException;
-use Auth\Exception\UserSearchException;
+use Auth\Exception\UserRuntimeException;
 use Auth\InputFilter\LoginUserInputFilter;
 use Auth\Service\AuthService;
 use Auth\Service\CookieManager;
@@ -36,7 +36,7 @@ final readonly class LoginUserHandler extends BaseAuthHandler
             $user = $this->authService->authenticate(
                 $this->validate($this->inputFilter, $request->getParsedBody())
             );
-        } catch (UserSearchException $e) {
+        } catch (UserRuntimeException $e) {
             throw NotFoundException::create($e->getMessage());
         } catch (AuthenticationFailedException $e) {
             throw UnauthorizedException::create($e->getMessage());

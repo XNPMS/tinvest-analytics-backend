@@ -14,6 +14,8 @@ readonly class CookieManager
     public const ACCESS_TOKEN = 'access_token';
     public const REFRESH_TOKEN = 'refresh_token';
     public const SET_COOKIE = 'Set-Cookie';
+    public const STRICT = 'Strict';
+
 
     public function __construct(private CookieConfig $cookieConfig)
     {
@@ -28,7 +30,7 @@ readonly class CookieManager
             path: $this->cookieConfig->cookiePath,
             secure: $this->cookieConfig->secure,
             maxAge: $maxAge,
-            sameSite: $this->cookieConfig->refreshCookieSameSite
+            sameSite: self::STRICT,
         );
     }
 
@@ -42,7 +44,7 @@ readonly class CookieManager
             secure: $this->cookieConfig->secure,
             httponly: $this->cookieConfig->httpOnly,
             maxAge: $maxAge,
-            sameSite: $this->cookieConfig->refreshCookieSameSite
+            sameSite: self::STRICT,
         );
     }
 
@@ -75,7 +77,7 @@ readonly class CookieManager
                 secure: $this->cookieConfig->secure,
                 httponly: $this->cookieConfig->httpOnly,
                 maxAge: 0,
-                sameSite: $this->cookieConfig->refreshCookieSameSite
+                sameSite: self::STRICT,
             );
 
             $response = $response->withAddedHeader(self::SET_COOKIE, $expired->getFieldValue());

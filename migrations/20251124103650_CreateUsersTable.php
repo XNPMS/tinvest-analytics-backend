@@ -32,6 +32,10 @@ final class CreateUsersTable extends Migration
      */
     public function down(): void
     {
-        Capsule::schema()->dropIfExists(User::TABLE);
+        Capsule::schema()->getConnection()->statement(
+            sprintf('DROP INDEX idx_users_email ON %s', User::TABLE)
+        );
+
+        Capsule::schema()->drop(User::TABLE);
     }
 }

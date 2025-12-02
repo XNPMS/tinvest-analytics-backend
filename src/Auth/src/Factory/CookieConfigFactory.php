@@ -14,8 +14,7 @@ class CookieConfigFactory
         return new CookieConfig(
             $config['path'],
             $config['secure'],
-            $config['httpOnly'],
-            $config['sameSite']
+            $config['http_only'],
         );
     }
 }

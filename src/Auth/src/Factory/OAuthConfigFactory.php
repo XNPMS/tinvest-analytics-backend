@@ -27,8 +27,7 @@ class OAuthConfigFactory
             new CookieConfig(
                 $config['cookie']['path'],
                 $config['cookie']['secure'],
-                $config['cookie']['httpOnly'],
-                $config['cookie']['sameSite']
+                $config['cookie']['http_only'],
             )
         );
     }

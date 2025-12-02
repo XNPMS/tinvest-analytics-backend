@@ -34,7 +34,7 @@ class RefreshToken extends Model
 
     public function isRevoked(): bool
     {
-        return $this->getAttributeFromArray('revoked') === 1;
+        return (bool)$this->getAttributeFromArray('revoked') === true;
     }
 
     public function getExpiresAt(): string

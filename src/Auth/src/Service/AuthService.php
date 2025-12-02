@@ -9,7 +9,7 @@ use Auth\DTO\UserCredentials;
 use Auth\Entity\RefreshToken;
 use Auth\Exception\AuthenticationFailedException;
 use Auth\Exception\InvalidRefreshTokenException;
-use Auth\Exception\UserSearchException;
+use Auth\Exception\UserRuntimeException;
 use Random\RandomException;
 use User\Entity\User;
 use User\Service\UserService;
@@ -30,14 +30,14 @@ readonly class AuthService
 
     /**
      * @throws InvalidRefreshTokenException
-     * @throws UserSearchException
+     * @throws UserRuntimeException
      * @throws RandomException
      */
     public function refreshWithRaw(string $rawRefresh): TokenPair
     {
         $refreshToken = $this->validateRefreshToken($rawRefresh);
         if (!$user = $this->userService->getUserById($refreshToken->getUserId())) {
-            throw new UserSearchException('User not found');
+            throw new UserRuntimeException('User not found');
         }
 
         $refreshToken->revoke();
@@ -89,13 +89,13 @@ readonly class AuthService
     }
 
     /**
-     * @throws UserSearchException
+     * @throws UserRuntimeException
      * @throws AuthenticationFailedException
      */
     public function authenticate(UserCredentials $userData): User
     {
         if (!$user = $this->userService->getUserByEmail($userData->email)) {
-            throw new UserSearchException('User not found');
+            throw new UserRuntimeException('User not found');
         }
 
         if (!password_verify($userData->password, $user->getPasswordHash())) {

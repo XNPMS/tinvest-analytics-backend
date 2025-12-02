@@ -14,6 +14,7 @@ class PasswordInput extends Input
 {
     private const MAX_LENGTH_PASSWORD = 128;
     private const MIN_LENGTH_PASSWORD = 8;
+    private const PATTERN_PASSWORD = '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/';
 
     public function __construct(?string $name = null, bool $isRequired = true)
     {
@@ -31,7 +32,7 @@ class PasswordInput extends Input
                 'max' => self::MAX_LENGTH_PASSWORD,
             ]))
             ->attach(new Regex([
-                'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/',
+                'pattern' => self::PATTERN_PASSWORD,
             ]));
     }
 }

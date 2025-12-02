@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace User\Service;
 
 use Auth\DTO\UserCredentials;
-use Auth\Exception\UserSearchException;
-use System\Exception\BadRequestException;
-use System\Exception\NotFoundException;
+use Auth\Exception\UserRuntimeException;
 use User\Entity\User;
 use User\Repository\UserRepository;
 
@@ -19,12 +17,12 @@ readonly class UserService
     }
 
     /**
-     * @throws UserSearchException
+     * @throws UserRuntimeException
      */
     public function createUser(UserCredentials $userData): User
     {
         if ($this->userRepository->getUserByEmail($userData->email)) {
-            throw new UserSearchException('User with this email address already exists');
+            throw new UserRuntimeException('User with this email address already exists');
         }
 
         $user = new User();

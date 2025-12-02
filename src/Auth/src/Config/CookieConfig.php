@@ -10,7 +10,6 @@ final readonly class CookieConfig
         public string $cookiePath,
         public bool $secure,
         public bool $httpOnly,
-        public string $refreshCookieSameSite,
     ) {
     }
 }

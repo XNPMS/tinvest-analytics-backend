@@ -6,7 +6,6 @@ namespace Auth\Service;
 
 use Auth\Entity\RefreshToken;
 use Auth\Repository\RefreshTokenRepository;
-use DateTime;
 
 readonly class RefreshTokenService
 {

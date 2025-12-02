@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Auth\Handler;
 
-use Auth\Exception\UserSearchException;
+use Auth\Exception\UserRuntimeException;
 use Auth\InputFilter\RegisterUserInputFilter;
 use Auth\Service\AuthService;
 use Auth\Service\CookieManager;
@@ -35,7 +35,7 @@ final readonly class RegisterUserHandler extends BaseAuthHandler
             $user = $this->userService->createUser(
                 $this->validate($this->inputFilter, $request->getParsedBody())
             );
-        } catch (UserSearchException $e) {
+        } catch (UserRuntimeException $e) {
             throw ConflictException::create($e->getMessage());
         }
 
