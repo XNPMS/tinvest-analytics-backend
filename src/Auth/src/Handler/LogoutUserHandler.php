@@ -27,9 +27,7 @@ final readonly class LogoutUserHandler extends BaseAuthHandler
 
         return $this->cookieManager->clearTokenCookies(
             new JsonResponse([
-                SuccessFailureEnum::SUCCESS->value => [
-                    'message' => 'Logged out',
-                ],
+                SuccessFailureEnum::SUCCESS->value => true,
             ])
         );
     }

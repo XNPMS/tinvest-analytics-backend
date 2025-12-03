@@ -46,5 +46,5 @@ return static function (Application $app, MiddlewareFactory $factory, ContainerI
     $app->get('/api/ping', PingHandler::class, 'api.ping');
     $app->post('/api/auth/register', RegisterUserHandler::class, 'api.register');
     $app->post('/api/auth/login', LoginUserHandler::class, 'api.login');
-    $app->post('/api/auth/logout', [AuthMiddleware::class, LogoutUserHandler::class], 'api.logout');
+    $app->get('/api/auth/logout', [AuthMiddleware::class, LogoutUserHandler::class], 'api.logout');
 };

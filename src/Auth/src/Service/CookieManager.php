@@ -51,16 +51,16 @@ readonly class CookieManager
     public function buildTokenPairCookies(TokenPair $tokenPair): array
     {
         return [
-            $this->buildAccessTokenCookie($tokenPair->accessToken, $tokenPair->expiresIn),
-            $this->buildRefreshTokenCookie($tokenPair->refreshToken, $tokenPair->refreshTokenTtl),
+            $this->buildAccessTokenCookie($tokenPair->accessToken, $tokenPair->expiresIn)->getFieldValue(),
+            $this->buildRefreshTokenCookie($tokenPair->refreshToken, $tokenPair->refreshTokenTtl)->getFieldValue(),
         ];
     }
 
     public function addTokenPairToResponse(TokenPair $tokenPair, ResponseInterface $response): ResponseInterface
     {
-        /** @var SetCookie $cookie */
+        /** @var string $cookie */
         foreach ($this->buildTokenPairCookies($tokenPair) as $cookie) {
-            $response = $response->withAddedHeader(self::SET_COOKIE, $cookie->getFieldValue());
+            $response = $response->withAddedHeader(self::SET_COOKIE, $cookie);
         }
 
         return $response;

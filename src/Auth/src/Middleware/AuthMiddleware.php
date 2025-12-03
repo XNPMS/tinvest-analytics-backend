@@ -4,28 +4,33 @@ declare(strict_types=1);
 
 namespace Auth\Middleware;
 
-use Auth\DTO\UserIdentity;
 use Auth\Exception\InvalidAccessTokenException;
+use Auth\Exception\InvalidRefreshTokenException;
+use Auth\Exception\UserRuntimeException;
 use Auth\Service\AuthService;
 use Auth\Service\CookieManager;
-use Auth\Service\TokenPairService;
+use Auth\Service\TokenManager;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use System\Exception\NotFoundException;
 use System\Exception\UnauthorizedException;
+use User\Service\UserService;
 
 final readonly class AuthMiddleware implements MiddlewareInterface
 {
     public function __construct(
         private AuthService $authService,
-        private TokenPairService $tokenPairService,
+        private UserService $userService,
+        private TokenManager $tokenManager,
         private CookieManager $cookieManager,
     ) {
     }
 
     /**
      * @throws UnauthorizedException
+     * @throws NotFoundException
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -34,7 +39,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
         if ($accessToken = $cookies[CookieManager::ACCESS_TOKEN] ?? null) {
             try {
                 if ([$token, $request] = $this->validateAccessToken($request, $accessToken)) {
-                    if ($this->tokenPairService->shouldRefreshAccessToken($token)) {
+                    if ($this->tokenManager->shouldRefreshAccessToken($token)) {
                         return $this->handleRefreshTokenFlow($request, $handler, $cookies);
                     }
 
@@ -50,6 +55,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
 
     /**
      * @throws UnauthorizedException
+     * @throws NotFoundException
      */
     private function handleRefreshTokenFlow(
         ServerRequestInterface $request,
@@ -72,9 +78,11 @@ final readonly class AuthMiddleware implements MiddlewareInterface
 
             return $handler
                 ->handle($request)
-                ->withHeader('Set-Cookie', $setCookieHeader);
-        } catch (\Throwable $e) {
-            throw UnauthorizedException::create($e->getMessage());
+                ->withHeader(CookieManager::SET_COOKIE, $setCookieHeader);
+        } catch (InvalidAccessTokenException | InvalidRefreshTokenException $e) {
+            throw UnauthorizedException::create('Authentication is required');
+        } catch (UserRuntimeException $e) {
+            throw NotFoundException::create($e->getMessage());
         }
     }
 
@@ -83,14 +91,17 @@ final readonly class AuthMiddleware implements MiddlewareInterface
      */
     private function validateAccessToken(ServerRequestInterface $request, string $accessToken): ?array
     {
-        if ($token = $this->tokenPairService->validateAccessToken($accessToken)) {
-            $claims = $token->claims();
-            if ($userEmail = $claims->get('sub')) {
-                return [$token, $request->withAttribute(
-                    'identity',
-                    new UserIdentity($userEmail, $claims)
-                )];
-            }
+        if (
+            ($token = $this->tokenManager->validateAccessToken($accessToken))
+            && ($userId = $token->claims()->get('sub'))
+        ) {
+            return [
+                $token,
+                $request->withAttribute(
+                    'user_model',
+                    $this->userService->getUserById((int)$userId)
+                )
+            ];
         }
 
         return null;

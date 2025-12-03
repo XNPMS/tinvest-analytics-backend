@@ -19,7 +19,7 @@ readonly class RefreshTokenService
         $refreshTokenEntity = new RefreshToken();
 
         $refreshTokenEntity->setUserId($userId);
-        $refreshTokenEntity->setRefreshToken(hash('sha256', $refreshToken));
+        $refreshTokenEntity->setRefreshTokenHash(hash('sha256', $refreshToken, true));
         $refreshTokenEntity->setExpiresAt((new \DateTime())->setTimestamp(time() + $refreshTokenTtl));
         $refreshTokenEntity->save();
 
@@ -28,12 +28,7 @@ readonly class RefreshTokenService
 
     public function getRefreshTokenByRefreshToken(string $refreshToken): ?RefreshToken
     {
-        return $this->refreshTokenRepository->getRefreshTokenByHash(hash('sha256', $refreshToken));
-    }
-
-    public function revoke(RefreshToken $token): void
-    {
-        $token->revoke();
+        return $this->refreshTokenRepository->getRefreshTokenByHash(hash('sha256', $refreshToken, true));
     }
 
     public function revokeAllForUser(int $userId): int

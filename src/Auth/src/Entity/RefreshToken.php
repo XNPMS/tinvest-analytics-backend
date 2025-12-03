@@ -52,14 +52,14 @@ class RefreshToken extends Model
         return (int)$this->getAttributeFromArray('user_id');
     }
 
-    public function setRefreshToken(string $refreshToken): void
+    public function setRefreshTokenHash(string $refreshToken): void
     {
-        $this->setAttribute('refresh_token', $refreshToken);
+        $this->setAttribute('refresh_token_hash', $refreshToken);
     }
 
-    public function getRefreshToken(): string
+    public function getRefreshTokenHash(): string
     {
-        return (string)$this->getAttributeFromArray('refresh_token');
+        return (string)$this->getAttributeFromArray('refresh_token_hash');
     }
 
     public function setExpiresAt(DateTime $expiresAt): void

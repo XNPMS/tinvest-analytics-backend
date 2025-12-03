@@ -18,7 +18,7 @@ readonly class RefreshTokenRepository extends AbstractEloquentRepository
     {
         /** @var RefreshToken */
         return $this->createQueryBuilder()
-            ->where('refresh_token', '=', $hashToken)
+            ->where('refresh_token_hash', '=', $hashToken)
             ?->first();
     }
 

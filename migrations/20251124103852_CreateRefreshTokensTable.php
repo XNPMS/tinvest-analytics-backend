@@ -17,7 +17,6 @@ final class CreateRefreshTokensTable extends Migration
         Capsule::schema()->create(RefreshToken::TABLE, function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('user_id');
-            $table->string('refresh_token', 191)->unique();
             $table->boolean('revoked')->default(false);
             $table->timestamp('expires_at');
             $table->timestamps();
@@ -29,12 +28,15 @@ final class CreateRefreshTokensTable extends Migration
                 ->onUpdate('cascade');
         });
 
-        Capsule::schema()->getConnection()->statement(
-            sprintf(
-                'CREATE INDEX idx_refresh_tokens_active ON %s(user_id, revoked, expires_at)',
-                RefreshToken::TABLE
-            )
-        );
+        Capsule::schema()->getConnection()->statement(sprintf(
+            'CREATE INDEX idx_refresh_tokens_active ON %s(user_id, revoked, expires_at)',
+            RefreshToken::TABLE
+        ));
+
+        Capsule::schema()->getConnection()->statement(sprintf(
+            'ALTER TABLE %s ADD refresh_token_hash BINARY(32) UNIQUE AFTER user_id',
+            RefreshToken::TABLE
+        ));
     }
 
     /**
