@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Handler\HomePageHandler;
 use App\Handler\PingHandler;
+use Auth\Handler\LoginUserHandler;
+use Auth\Handler\LogoutUserHandler;
+use Auth\Handler\RegisterUserHandler;
+use Auth\Middleware\AuthMiddleware;
 use Mezzio\Application;
 use Mezzio\MiddlewareFactory;
 use Psr\Container\ContainerInterface;
@@ -40,6 +43,8 @@ use Psr\Container\ContainerInterface;
  */
 
 return static function (Application $app, MiddlewareFactory $factory, ContainerInterface $container): void {
-    $app->get('/', HomePageHandler::class, 'home');
     $app->get('/api/ping', PingHandler::class, 'api.ping');
+    $app->post('/api/auth/register', RegisterUserHandler::class, 'api.register');
+    $app->post('/api/auth/login', LoginUserHandler::class, 'api.login');
+    $app->get('/api/auth/logout', [AuthMiddleware::class, LogoutUserHandler::class], 'api.logout');
 };

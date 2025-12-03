@@ -2,13 +2,8 @@
 
 declare(strict_types=1);
 
-namespace App;
+namespace User;
 
-/**
- * The configuration provider for the App module
- *
- * @see https://docs.laminas.dev/laminas-component-installer/
- */
 class ConfigProvider
 {
     /**
@@ -21,7 +16,6 @@ class ConfigProvider
     {
         return [
             'dependencies' => $this->getDependencies(),
-            'templates'    => $this->getTemplates(),
         ];
     }
 
@@ -33,20 +27,6 @@ class ConfigProvider
         return [
             'invokables' => [],
             'factories'  => [],
-        ];
-    }
-
-    /**
-     * Returns the templates configuration
-     */
-    public function getTemplates(): array
-    {
-        return [
-            'paths' => [
-                'app'    => [__DIR__ . '/../templates/app'],
-                'error'  => [__DIR__ . '/../templates/error'],
-                'layout' => [__DIR__ . '/../templates/layout'],
-            ],
         ];
     }
 }
