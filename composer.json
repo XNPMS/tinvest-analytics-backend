@@ -71,6 +71,7 @@
         "mezzio/mezzio-problem-details": "^1.17",
         "mezzio/mezzio-twigrenderer": "^2.15",
         "monolog/monolog": "^3.9",
+        "php-amqplib/php-amqplib": "^3.7",
         "ramsey/uuid": "^4.9",
         "symfony/console": "^5.4",
         "vlucas/phpdotenv": "^5.6"
@@ -93,7 +94,8 @@
             "App\\": "src/App/src/",
             "System\\": "src/System/src/",
             "Auth\\": "src/Auth/src/",
-            "User\\": "src/User/src/"
+            "User\\": "src/User/src/",
+            "Tinvest\\": "src/Tinvest/src"
         }
     },
     "autoload-dev": {

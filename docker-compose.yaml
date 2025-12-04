@@ -29,8 +29,8 @@ services:
       - ./docker/nginx/templates/:/etc/nginx/templates/
       - ./public/:/var/www/application/public/
     ports:
-      - "9000:9000"
-      - "443:443"
+      - '9000:9000'
+      - '443:443'
 
   # MySQL Service
   tinvest-analytics-mysql:
@@ -39,7 +39,7 @@ services:
     restart: always
     tty: true
     ports:
-      - "3307:3306"
+      - '3307:3306'
     environment:
       MYSQL_DATABASE: ${DATABASE_NAME}
       MYSQL_USER: ${DATABASE_USERNAME}
@@ -50,14 +50,18 @@ services:
       - applicationMysqlData:/var/lib/mysql
       - applicationMysqlFiles:/var/lib/mysql-files
 
-  # Queue Service
-  tinvest-analytics-beanstalkd:
-    image: schickling/beanstalkd:latest
-    container_name: tinvest-analytics-beanstalkd
-    restart: always
-    tty: true
-    ports:
-      - "11300:11300"
+  # RabbitMQ Service
+  tinvest-analytics-rabbitmq:
+   image: rabbitmq:3.11-management
+   container_name: tinvest-analytics-rabbitmq
+   restart: always
+   tty: true
+   ports:
+      - '5672:5672'
+      - '15672:15672'
+   environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
 
   # Memcached Service
   tinvest-analytics-memcached:
@@ -66,7 +70,7 @@ services:
     restart: always
     tty: true
     ports:
-      - "11211:11211"
+      - '11211:11211'
     environment:
       SERVICE_NAME: memcached
 

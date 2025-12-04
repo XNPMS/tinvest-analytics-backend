@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Auth\Middleware;
 
+use Auth\DTO\TokenPair;
 use Auth\Exception\InvalidAccessTokenException;
 use Auth\Exception\InvalidRefreshTokenException;
 use Auth\Exception\UserRuntimeException;
@@ -16,6 +17,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use System\Exception\NotFoundException;
 use System\Exception\UnauthorizedException;
+use User\Entity\User;
 use User\Service\UserService;
 
 final readonly class AuthMiddleware implements MiddlewareInterface
@@ -74,7 +76,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
                 return $handler->handle($request);
             }
 
-            $request = $request->withAttribute('token_pair', $tokenPair);
+            $request = $request->withAttribute(TokenPair::class, $tokenPair);
 
             return $handler
                 ->handle($request)
@@ -98,7 +100,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
             return [
                 $token,
                 $request->withAttribute(
-                    'user_model',
+                    User::class,
                     $this->userService->getUserById((int)$userId)
                 )
             ];
