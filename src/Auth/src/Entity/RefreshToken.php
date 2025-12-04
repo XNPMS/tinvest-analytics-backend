@@ -1,0 +1,69 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Auth\Entity;
+
+use Carbon\Carbon;
+use DateTime;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use User\Entity\User;
+
+class RefreshToken extends Model
+{
+    public const TABLE = 'refresh_tokens';
+
+    /** @var string */
+    protected $table = self::TABLE;
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function isExpired(): bool
+    {
+        return Carbon::now()->gt(Carbon::parse($this->getExpiresAt()));
+    }
+
+    public function revoke(): void
+    {
+        $this->setAttribute('revoked', true);
+    }
+
+    public function isRevoked(): bool
+    {
+        return (bool)$this->getAttributeFromArray('revoked') === true;
+    }
+
+    public function getExpiresAt(): string
+    {
+        return (string)$this->getAttributeFromArray('expires_at');
+    }
+
+    public function setUserId(int $userId): void
+    {
+        $this->setAttribute('user_id', $userId);
+    }
+
+    public function getUserId(): int
+    {
+        return (int)$this->getAttributeFromArray('user_id');
+    }
+
+    public function setRefreshTokenHash(string $refreshToken): void
+    {
+        $this->setAttribute('refresh_token_hash', $refreshToken);
+    }
+
+    public function getRefreshTokenHash(): string
+    {
+        return (string)$this->getAttributeFromArray('refresh_token_hash');
+    }
+
+    public function setExpiresAt(DateTime $expiresAt): void
+    {
+        $this->setAttribute('expires_at', $expiresAt);
+    }
+}
