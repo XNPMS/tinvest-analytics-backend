@@ -21,11 +21,7 @@ abstract readonly class BaseAuthHandler implements RequestHandlerInterface
         $filter->setData($body ?? []);
 
         if (!$filter->isValid()) {
-            throw BadRequestException::create(
-                detail: 'Invalid data provided',
-                title: SuccessFailureEnum::FAIL->value,
-                additional: ['errors' => $filter->getMessages()],
-            );
+            throw BadRequestException::fromInputFilter($filter);
         }
 
         return UserCredentials::fromArray($filter->getValues());

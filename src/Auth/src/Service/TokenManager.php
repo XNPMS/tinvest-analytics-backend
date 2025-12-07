@@ -77,13 +77,15 @@ readonly class TokenManager
     {
         $token = $this->refreshTokenService->getRefreshTokenByRefreshToken($rawRefresh);
 
-        switch (true) {
-            case !$token:
-                throw new InvalidRefreshTokenException('Refresh token not found');
-            case $token->isRevoked():
-                throw new InvalidRefreshTokenException('Refresh token revoked');
-            case $token->isExpired():
-                throw new InvalidRefreshTokenException('Refresh token expired');
+        $message = match (true) {
+            !$token => 'Refresh token not found',
+            $token->isRevoked() => 'Refresh token revoked',
+            $token->isExpired() => 'Refresh token expired',
+            default => null,
+        };
+
+        if ($message !== null) {
+            throw new InvalidRefreshTokenException($message);
         }
 
         return $token;

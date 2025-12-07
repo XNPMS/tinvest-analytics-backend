@@ -90,6 +90,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
 
     /**
      * @throws InvalidAccessTokenException
+     * @throws NotFoundException
      */
     private function validateAccessToken(ServerRequestInterface $request, string $accessToken): ?array
     {
@@ -97,12 +98,14 @@ final readonly class AuthMiddleware implements MiddlewareInterface
             ($token = $this->tokenManager->validateAccessToken($accessToken))
             && ($userId = $token->claims()->get('sub'))
         ) {
+            if (!$user = $this->userService->getUserById((int)$userId)) {
+                // такого быть не должно
+                throw NotFoundException::create('User not found');
+            }
+
             return [
                 $token,
-                $request->withAttribute(
-                    User::class,
-                    $this->userService->getUserById((int)$userId)
-                )
+                $request->withAttribute(User::class, $user),
             ];
         }
 

@@ -4,7 +4,16 @@ declare(strict_types=1);
 
 namespace System\Queue\Enum;
 
+use Tinvest\Worker\SyncTinvestAccountWorker;
+
 enum QueueName: string
 {
-    case SYNC_SELECT = 'sync_select_tinvest';
+    case SYNC_TINVEST_ACCOUNTS = 'sync.tinvest.accounts';
+
+    public function resolveWorker(): string
+    {
+        return match ($this) {
+            self::SYNC_TINVEST_ACCOUNTS => SyncTinvestAccountWorker::class,
+        };
+    }
 }

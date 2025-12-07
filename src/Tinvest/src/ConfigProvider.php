@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Tinvest;
 
+use System\Factory\InputFilterAbstractFactory;
+use Tinvest\InputFilter\TinvestAccountIdsInputFilter;
+use Tinvest\InputFilter\TinvestTokenInputFilter;
+
 class ConfigProvider
 {
     /**
@@ -26,7 +30,10 @@ class ConfigProvider
     {
         return [
             'invokables' => [],
-            'factories'  => [],
+            'factories'  => [
+                TinvestTokenInputFilter::class => InputFilterAbstractFactory::class,
+                TinvestAccountIdsInputFilter::class => InputFilterAbstractFactory::class,
+            ],
         ];
     }
 }

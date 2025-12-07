@@ -19,9 +19,10 @@ class RabbitMQ
     /**
      * @throws Exception
      */
-    public function getConnection(): AMQPStreamConnection
+    public function getConnection(bool $new = false): AMQPStreamConnection
     {
-        if ($this->connection === null || !$this->connection->isConnected()) {
+        if ($new || $this->connection === null || !$this->connection->isConnected()) {
+            $this->connection?->close();
             $this->connection = new AMQPStreamConnection(
                 $this->config->host,
                 $this->config->port,

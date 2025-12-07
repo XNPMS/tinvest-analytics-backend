@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace System\Exception;
 
 use Fig\Http\Message\StatusCodeInterface;
+use Laminas\InputFilter\InputFilterInterface;
 use Mezzio\ProblemDetails\Exception\CommonProblemDetailsExceptionTrait;
 use Mezzio\ProblemDetails\Exception\ProblemDetailsExceptionInterface;
 
@@ -25,6 +26,21 @@ final class BadRequestException extends \Exception implements ProblemDetailsExce
         $exception->status = StatusCodeInterface::STATUS_BAD_REQUEST;
         $exception->title = $title;
         $exception->additional = $additional;
+
+        return $exception;
+    }
+
+    public static function fromInputFilter(InputFilterInterface $inputFilter): self
+    {
+        $exception = new self();
+
+        $exception->type = '';
+        $exception->title = '';
+        $exception->detail = 'Invalid request data';
+        $exception->status = StatusCodeInterface::STATUS_BAD_REQUEST;
+        $exception->additional = [
+            'errors_validation' => $inputFilter->getMessages()
+        ];
 
         return $exception;
     }

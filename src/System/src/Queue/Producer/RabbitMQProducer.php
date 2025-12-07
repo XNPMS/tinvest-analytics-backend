@@ -4,37 +4,58 @@ declare(strict_types=1);
 
 namespace System\Queue\Producer;
 
+use Exception;
 use JsonException;
+use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
 use System\Queue\Client\RabbitMQ;
 use System\Queue\Enum\QueueName;
+use Tinvest\Message\MessageInterface;
 
 readonly class RabbitMQProducer implements QueueProducerInterface
 {
+    private AMQPChannel $channel;
+
+    /**
+     * @throws Exception
+     */
     public function __construct(
         private RabbitMQ $rabbit,
-        private QueueName $queue
+        private QueueName $queue,
     ) {
+        $this->channel = $this->rabbit->getConnection()->channel();
+        $this->channel->queue_declare(
+            queue: $this->queue->value,
+            durable: true,
+            auto_delete: false
+        );
+
+//        $this->channel->confirm_select();
     }
 
     /**
      * @throws JsonException
+     * @throws Exception
      */
-    public function produce(array $data): void
+    public function produce(MessageInterface $msg): string
     {
-        $channel = $this->rabbit->getConnection()->channel();
-
-        // создаём очередь, если ее нет (durable)
-        $channel->queue_declare($this->queue->value, false, true, false, false);
-
-        $channel->basic_publish(
-            msg: new AMQPMessage(
-                json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
-                ['delivery_mode' => 2] // persistent
-            ),
-            routing_key: $this->queue->value
+        $jobId = sprintf('%s-%s-%s', $msg->user->getId(), time(), bin2hex(random_bytes(4)));
+        $amqpMsg = new AMQPMessage(
+            json_encode($msg->toArray(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+            [
+                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+                'message_id' => $jobId,
+            ]
         );
 
-        $channel->close();
+        $this->channel->basic_publish($amqpMsg, routing_key: $this->queue->value);
+//        $this->channel->wait_for_pending_acks();
+
+        return $jobId;
+    }
+
+    public function __destruct()
+    {
+        $this->channel->close();
     }
 }

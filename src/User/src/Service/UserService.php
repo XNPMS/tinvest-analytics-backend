@@ -43,4 +43,12 @@ readonly class UserService
     {
         return $this->userRepository->getUserByEmail($email);
     }
+
+    public function saveTinvestToken(User $user, string $tToken): User
+    {
+        $user->setTinvestToken($tToken);
+        $user->save();
+
+        return $user;
+    }
 }

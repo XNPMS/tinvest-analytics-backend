@@ -11,7 +11,7 @@ final readonly class RabbitMQConfig
         public int $port,
         public string $username,
         public string $password,
-        public string $vhost = '/',
+        public string $vhost,
     ) {
     }
 }

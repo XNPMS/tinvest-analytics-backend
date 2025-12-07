@@ -44,4 +44,14 @@ class User extends Model
     {
         return (string)$this->getAttributeFromArray('password_hash');
     }
+
+    public function setTinvestToken(string $token): void
+    {
+        $this->setAttribute('t_token', $token);
+    }
+
+    public function getTinvestToken(): string
+    {
+        return (string)$this->getAttributeFromArray('t_token');
+    }
 }

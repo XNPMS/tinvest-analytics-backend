@@ -12,16 +12,15 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use System\Queue\Enum\QueueName;
 use System\Queue\Worker\QueueWorkerInterface;
 
 class QueueWorkerCommand extends Command
 {
-    public const COMMAND_NAME = 'queue:worker';
+    public const COMMAND_NAME = 'system:queue:worker';
 
-    public function __construct(
-        private readonly ContainerInterface $container,
-        private readonly array $workerMap,
-    ) {
+    public function __construct(private readonly ContainerInterface $container)
+    {
         parent::__construct(self::COMMAND_NAME);
     }
 
@@ -41,19 +40,19 @@ class QueueWorkerCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $workerKey = $input->getOption('queue');
-        $workerClass = $this->workerMap[$workerKey] ?? null;
+        $queueName = $input->getOption('queue');
+        $workerClass = QueueName::tryFrom($queueName)?->resolveWorker();
 
         if ($workerClass === null) {
             $io->error(sprintf(
                 'Queue %s does not exist or is not registered, stopping',
-                $workerKey
+                $queueName
             ));
 
             return Command::INVALID;
         }
 
-        $io->title(sprintf('Queue for work: %s', $workerKey));
+        $io->title(sprintf('Queue for work: %s', $queueName));
 
         try {
             $worker = $this->container->get($workerClass);
@@ -76,6 +75,9 @@ class QueueWorkerCommand extends Command
         return Command::SUCCESS;
     }
 
+    /**
+     * TODO: надо логгер
+     */
     private function handleError(SymfonyStyle $io, \Throwable $e): void
     {
         $io->error(sprintf(

@@ -6,6 +6,7 @@ namespace System\Queue\Producer;
 
 use System\Queue\Enum\QueueName;
 use System\Queue\Factory\QueueProducerFactory;
+use Tinvest\Message\MessageInterface;
 
 readonly class QueueManager
 {
@@ -13,8 +14,8 @@ readonly class QueueManager
     {
     }
 
-    public function send(QueueName $queue, array $data): void
+    public function send(QueueName $queue, MessageInterface $msg): string
     {
-        $this->factory->create($queue)->produce($data);
+        return $this->factory->create($queue)->produce($msg);
     }
 }

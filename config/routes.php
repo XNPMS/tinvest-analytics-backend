@@ -10,6 +10,8 @@ use Auth\Middleware\AuthMiddleware;
 use Mezzio\Application;
 use Mezzio\MiddlewareFactory;
 use Psr\Container\ContainerInterface;
+use Tinvest\Handler\TinvestAccountsSelectionHandler;
+use Tinvest\Handler\CreateTinvestTokenHandler;
 
 /**
  * laminas-router route configuration
@@ -44,7 +46,19 @@ use Psr\Container\ContainerInterface;
 
 return static function (Application $app, MiddlewareFactory $factory, ContainerInterface $container): void {
     $app->get('/api/ping', PingHandler::class, 'api.ping');
+
     $app->post('/api/auth/register', RegisterUserHandler::class, 'api.register');
     $app->post('/api/auth/login', LoginUserHandler::class, 'api.login');
     $app->get('/api/auth/logout', [AuthMiddleware::class, LogoutUserHandler::class], 'api.logout');
+
+    $app->post(
+        '/api/v1/tinvest/token',
+        [AuthMiddleware::class, CreateTinvestTokenHandler::class],
+        'api.tinvest.token'
+    );
+    $app->post(
+        '/api/v1/tinvest/accounts/selection',
+        [AuthMiddleware::class, TinvestAccountsSelectionHandler::class],
+        'api.tinvest.accounts.selection'
+    );
 };

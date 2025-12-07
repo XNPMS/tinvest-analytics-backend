@@ -7,8 +7,10 @@ namespace System;
 use Laminas\Cache\Psr\SimpleCache\SimpleCacheDecorator;
 use Laminas\Cache\Service\StorageCacheFactory;
 use Laminas\Cache\Storage\Adapter\Memcached;
+use Laminas\EventManager\EventManager;
 use Laminas\ServiceManager\AbstractFactory\ReflectionBasedAbstractFactory;
 use Psr\SimpleCache\CacheInterface;
+use System\Delegator\EventManagerDelegator;
 use System\Factory\InputFilterMessageResolverFactory;
 use System\Factory\MemcachedFactory;
 use System\Queue\Command\QueueWorkerCommand;
@@ -16,6 +18,8 @@ use System\Queue\Config\RabbitMQConfig;
 use System\Queue\Factory\QueueWorkerCommandFactory;
 use System\Queue\Factory\RabbitMQConfigFactory;
 use System\Service\InputFilterMessageResolver;
+use Tinvest\Event\AccountsFetchedEvent;
+use Tinvest\EventListener\SaveAccountsListener;
 
 class ConfigProvider
 {
@@ -50,6 +54,9 @@ class ConfigProvider
                 SimpleCacheDecorator::class => MemcachedFactory::class,
                 RabbitMQConfig::class => RabbitMQConfigFactory::class,
                 QueueWorkerCommand::class => QueueWorkerCommandFactory::class,
+            ],
+            'delegators' => [
+                EventManager::class => [EventManagerDelegator::class],
             ],
         ];
     }
