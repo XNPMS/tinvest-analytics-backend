@@ -1,0 +1,60 @@
+post:
+  tags:
+    - Auth
+  summary: Регистрация нового пользователя
+  operationId: authRegister
+  description: >
+    Создаёт пользователя и сразу выдаёт пару токенов через Set-Cookie.
+    `access_token` — короткоживущий JWT (15 мин, path=/api).
+    `refresh_token` — долгоживущий httpOnly cookie (30 дней, path=/api).
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - email
+            - password
+            - password_confirmation
+          properties:
+            email:
+              type: string
+              format: email
+              maxLength: 255
+              example: "user@example.com"
+            password:
+              type: string
+              minLength: 8
+              maxLength: 128
+              description: "Минимум 1 заглавная буква, 1 строчная, 1 цифра"
+              example: "SecurePass1"
+            password_confirmation:
+              type: string
+              minLength: 8
+              maxLength: 128
+              example: "SecurePass1"
+  responses:
+    "200":
+      description: Пользователь создан. Токены установлены в cookies.
+      headers:
+        Set-Cookie:
+          description: >
+            Два заголовка Set-Cookie:
+            `access_token` — JWT, path=/api, SameSite=Strict;
+            `refresh_token` — JWT, httpOnly, path=/api, SameSite=Strict.
+          schema:
+            type: string
+            example: "access_token=eyJ...; Path=/api; SameSite=Strict"
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas.yaml#/UserAuthSuccess"
+          example:
+            success:
+              email: "user@example.com"
+              user_id: 1
+    "400":
+      $ref: "../components/responses.yaml#/BadRequest"
+    "409":
+      $ref: "../components/responses.yaml#/Conflict"

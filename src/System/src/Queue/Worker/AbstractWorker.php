@@ -9,15 +9,17 @@ use PhpAmqpLib\Message\AMQPMessage;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use System\Queue\Client\RabbitMQ;
-use System\Queue\Enum\QueueName;
+use System\Queue\Enum\Workers;
 
 abstract class AbstractWorker implements QueueWorkerInterface
 {
-    protected QueueName $queueName;
+    private const DATE_FORMAT = 'Y-m-d H:i:s';
+
+    protected Workers $queueName;
 
     public function __construct(
         private readonly RabbitMQ $client,
-//        private readonly LoggerInterface $logger,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -37,15 +39,18 @@ abstract class AbstractWorker implements QueueWorkerInterface
                 // Подтверждаем обработку
                 $msg->ack();
             } catch (\Throwable $e) {
-                // поставить логгер
-                file_put_contents(
-                    '/var/www/application/rabbitmq_worker_errors.log',
-                    $e->getMessage() . "\n",
-                    FILE_APPEND
-                );
+                $this->logger->error(sprintf(
+                    '[%s] Workers %s processing error',
+                    date(self::DATE_FORMAT),
+                    static::class
+                ), [
+                    'exception_message' => $e->getMessage(),
+                    'message_id' => $msg->get('message_id') ,
+//                    'body' => $msg->getBody(),
+                ]);
 
                 // Отправляем обратно с повтором (requeue)
-                $msg->nack(true);
+                $msg->nack(false);
             }
         };
 

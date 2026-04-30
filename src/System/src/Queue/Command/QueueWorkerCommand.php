@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use System\Queue\Enum\QueueName;
+use System\Queue\Enum\Workers;
 use System\Queue\Worker\QueueWorkerInterface;
 
 class QueueWorkerCommand extends Command
@@ -41,7 +41,7 @@ class QueueWorkerCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         $queueName = $input->getOption('queue');
-        $workerClass = QueueName::tryFrom($queueName)?->resolveWorker();
+        $workerClass = Workers::tryFrom($queueName)?->resolveWorker();
 
         if ($workerClass === null) {
             $io->error(sprintf(
@@ -59,7 +59,7 @@ class QueueWorkerCommand extends Command
 
             if (!$worker instanceof QueueWorkerInterface) {
                 throw new \RuntimeException(sprintf(
-                    'Worker "%s" must implement %s',
+                    'Workers "%s" must implement %s',
                     $workerClass,
                     QueueWorkerInterface::class
                 ));

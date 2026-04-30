@@ -1,0 +1,58 @@
+BadRequest:
+  description: Ошибка валидации входных данных
+  content:
+    application/problem+json:
+      schema:
+        $ref: "../components/schemas.yaml#/ValidationError"
+      example:
+        type: ""
+        title: ""
+        status: 400
+        detail: "Invalid request data"
+        errors_validation:
+          email:
+            emailAddressInvalidFormat: "The input is not a valid email address"
+
+Unauthorized:
+  description: Не авторизован — access_token отсутствует или истёк
+  content:
+    application/problem+json:
+      schema:
+        $ref: "../components/schemas.yaml#/ProblemDetails"
+      example:
+        status: 401
+        detail: "Unauthorized"
+        title: "Unauthorized"
+
+Forbidden:
+  description: Доступ запрещён
+  content:
+    application/problem+json:
+      schema:
+        $ref: "../components/schemas.yaml#/ProblemDetails"
+      example:
+        status: 403
+        detail: "Forbidden"
+        title: "Forbidden"
+
+NotFound:
+  description: Ресурс не найден
+  content:
+    application/problem+json:
+      schema:
+        $ref: "../components/schemas.yaml#/ProblemDetails"
+      example:
+        status: 404
+        detail: "Not found"
+        title: "Not Found"
+
+Conflict:
+  description: Конфликт — ресурс уже существует
+  content:
+    application/problem+json:
+      schema:
+        $ref: "../components/schemas.yaml#/ProblemDetails"
+      example:
+        status: 409
+        detail: "User with this email already exists"
+        title: "Conflict"

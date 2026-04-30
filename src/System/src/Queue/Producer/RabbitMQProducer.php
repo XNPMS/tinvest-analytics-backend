@@ -9,7 +9,7 @@ use JsonException;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
 use System\Queue\Client\RabbitMQ;
-use System\Queue\Enum\QueueName;
+use System\Queue\Enum\Workers;
 use Tinvest\Message\MessageInterface;
 
 readonly class RabbitMQProducer implements QueueProducerInterface
@@ -21,7 +21,7 @@ readonly class RabbitMQProducer implements QueueProducerInterface
      */
     public function __construct(
         private RabbitMQ $rabbit,
-        private QueueName $queue,
+        private Workers  $queue,
     ) {
         $this->channel = $this->rabbit->getConnection()->channel();
         $this->channel->queue_declare(
@@ -39,7 +39,7 @@ readonly class RabbitMQProducer implements QueueProducerInterface
      */
     public function produce(MessageInterface $msg): string
     {
-        $jobId = sprintf('%s-%s-%s', $msg->user->getId(), time(), bin2hex(random_bytes(4)));
+        $jobId = sprintf('%s-%s-%s', $msg->userId, time(), bin2hex(random_bytes(4)));
         $amqpMsg = new AMQPMessage(
             json_encode($msg->toArray(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
             [

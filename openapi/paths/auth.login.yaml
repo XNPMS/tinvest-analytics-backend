@@ -1,0 +1,53 @@
+post:
+  tags:
+    - Auth
+  summary: Вход пользователя
+  operationId: authLogin
+  description: >
+    Аутентифицирует пользователя по email/password и выдаёт пару токенов через Set-Cookie.
+    Если пользователь не найден — 404. Если пароль неверный — 401.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - email
+            - password
+          properties:
+            email:
+              type: string
+              format: email
+              maxLength: 255
+              example: "user@example.com"
+            password:
+              type: string
+              minLength: 8
+              maxLength: 128
+              example: "SecurePass1"
+  responses:
+    "200":
+      description: Успешная аутентификация. Токены установлены в cookies.
+      headers:
+        Set-Cookie:
+          description: >
+            Два заголовка Set-Cookie:
+            `access_token` — JWT, path=/api, SameSite=Strict;
+            `refresh_token` — JWT, httpOnly, path=/api, SameSite=Strict.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas.yaml#/UserAuthSuccess"
+          example:
+            success:
+              email: "user@example.com"
+              user_id: 1
+    "400":
+      $ref: "../components/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"
+    "404":
+      $ref: "../components/responses.yaml#/NotFound"

@@ -50,7 +50,7 @@ class User extends Model
         $this->setAttribute('t_token', $token);
     }
 
-    public function getTinvestToken(): string
+    public function getTinvestToken(): ?string
     {
         return (string)$this->getAttributeFromArray('t_token');
     }

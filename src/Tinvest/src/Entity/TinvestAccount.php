@@ -16,6 +16,11 @@ class TinvestAccount extends Model
     /** @var string */
     protected $table = self::TABLE;
 
+    public function getId(): int
+    {
+        return (int)$this->getAttributeFromArray('id');
+    }
+
     public function getUserId(): int
     {
         return (int)$this->getAttributeFromArray('user_id');
@@ -34,6 +39,11 @@ class TinvestAccount extends Model
     public function isAnalyticsEnabled(): bool
     {
         return (bool)$this->getAttributeFromArray('analytics_enabled');
+    }
+
+    public function isSynced(): bool
+    {
+        return (bool)$this->getAttributeFromArray('is_synced');
     }
 
     public function getStatus(): string

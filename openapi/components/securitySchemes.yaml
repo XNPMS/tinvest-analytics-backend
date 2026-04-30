@@ -1,0 +1,7 @@
+cookieAuth:
+  type: apiKey
+  in: cookie
+  name: access_token
+  description: >
+    JWT access-токен, устанавливается автоматически в cookie при логине/регистрации.
+    Используется всеми защищёнными ручками.

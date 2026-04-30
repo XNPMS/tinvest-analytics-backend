@@ -20,6 +20,7 @@ final class CreateTinvestAccountsTable extends Migration
             $table->string('account_id', 64);
             $table->string('name', 255)->nullable();
             $table->boolean('analytics_enabled')->default(false);
+            $table->boolean('is_synced')->default(false);
             $table->unsignedTinyInteger('status');
             $table->unsignedTinyInteger('type');
             $table->string('opened_date', 255);

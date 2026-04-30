@@ -29,11 +29,15 @@ class ConfigProvider
     public function getDependencies(): array
     {
         return [
-            'invokables' => [],
-            'factories'  => [
-                TinvestTokenInputFilter::class => InputFilterAbstractFactory::class,
-                TinvestAccountIdsInputFilter::class => InputFilterAbstractFactory::class,
-            ],
+            'factories' => $this->getFactories(),
+        ];
+    }
+
+    private function getFactories(): array
+    {
+        return [
+            TinvestTokenInputFilter::class => InputFilterAbstractFactory::class,
+            TinvestAccountIdsInputFilter::class => InputFilterAbstractFactory::class,
         ];
     }
 }

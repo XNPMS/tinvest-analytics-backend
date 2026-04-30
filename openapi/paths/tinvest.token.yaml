@@ -1,0 +1,67 @@
+post:
+  tags:
+    - Tinvest
+  summary: Сохранить токен Tinkoff Invest и получить список счетов
+  operationId: tinvestSaveToken
+  description: >
+    Принимает персональный токен T-Invest API пользователя, сохраняет его
+    и сразу запрашивает все брокерские счета через gRPC (GetAccounts).
+    Счета сохраняются в таблицу `tinvest_accounts`.
+
+    Возвращает список всех найденных счетов — пользователь выбирает
+    нужные и передаёт их в `/api/v1/tinvest/accounts/selection`.
+
+    Если токен невалиден или gRPC-запрос упал — 400.
+  security:
+    - cookieAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - token
+          properties:
+            token:
+              type: string
+              description: >
+                Персональный токен T-Invest API.
+                Получить: https://www.tbank.ru/invest/settings/
+              example: "t.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  responses:
+    "200":
+      description: Токен сохранён, счета получены.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas.yaml#/TinvestAccountsResponse"
+          example:
+            accounts:
+              - account_id: "2054565444"
+                name: "Брокерский счёт"
+                status: 2
+                type: 1
+                opened_date: "2023-01-15 00:00:00"
+                access_level: 1
+                created_at: "2024-01-01 12:00:00"
+                updated_at: "2024-01-01 12:00:00"
+              - account_id: "2054565445"
+                name: "ИИС"
+                status: 2
+                type: 2
+                opened_date: "2022-06-01 00:00:00"
+                access_level: 1
+                created_at: "2024-01-01 12:00:00"
+                updated_at: "2024-01-01 12:00:00"
+    "400":
+      description: Токен невалиден или gRPC-запрос к Tinkoff упал
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../components/schemas.yaml#/ProblemDetails"
+          example:
+            status: 400
+            detail: "Check the token and retry the request"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"

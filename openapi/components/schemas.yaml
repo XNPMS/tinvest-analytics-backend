@@ -1,0 +1,131 @@
+# ─── Общие примитивы ─────────────────────────────────────────────────────────
+
+ProblemDetails:
+  type: object
+  description: RFC 7807 Problem Details (mezzio-problem-details)
+  required:
+    - status
+    - detail
+  properties:
+    type:
+      type: string
+      example: "https://httpstatus.es/400"
+    title:
+      type: string
+      example: "Bad Request"
+    status:
+      type: integer
+      example: 400
+    detail:
+      type: string
+      example: "Invalid request data"
+
+ValidationError:
+  allOf:
+    - $ref: "#/ProblemDetails"
+    - type: object
+      properties:
+        errors_validation:
+          type: object
+          description: Ключи — имена полей, значения — словарь ошибок валидатора
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+          example:
+            email:
+              emailAddressInvalidFormat: "The input is not a valid email address"
+            password:
+              stringLengthTooShort: "The input is less than 8 characters long"
+
+# ─── Auth ─────────────────────────────────────────────────────────────────────
+
+UserAuthSuccess:
+  type: object
+  required:
+    - success
+  properties:
+    success:
+      type: object
+      required:
+        - email
+        - user_id
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        user_id:
+          type: integer
+          example: 1
+
+# ─── Tinvest ──────────────────────────────────────────────────────────────────
+
+TinvestAccount:
+  type: object
+  required:
+    - account_id
+    - name
+    - status
+    - type
+    - opened_date
+    - access_level
+  properties:
+    account_id:
+      type: string
+      description: Строковый идентификатор счёта в Tinkoff
+      example: "2054565444"
+    name:
+      type: string
+      example: "Мой брокерский счёт"
+    status:
+      type: integer
+      description: "AccountStatus (0=UNSPECIFIED, 1=NEW, 2=OPEN, 3=CLOSED)"
+      example: 2
+    type:
+      type: integer
+      description: "AccountType (0=UNSPECIFIED, 1=TINKOFF, 2=TINKOFF_IIS, 3=INVEST_BOX)"
+      example: 1
+    opened_date:
+      type: string
+      format: date-time
+      example: "2023-01-15 00:00:00"
+    access_level:
+      type: integer
+      description: "AccessLevel (0=UNSPECIFIED, 1=FULL_ACCESS, 2=READ_ONLY, 3=NO_ACCESS)"
+      example: 1
+    created_at:
+      type: string
+      format: date-time
+      example: "2024-01-01 12:00:00"
+    updated_at:
+      type: string
+      format: date-time
+      example: "2024-01-01 12:00:00"
+
+TinvestAccountsResponse:
+  type: object
+  required:
+    - accounts
+  properties:
+    accounts:
+      type: array
+      items:
+        $ref: "#/TinvestAccount"
+
+SyncJobResponse:
+  type: object
+  required:
+    - success
+    - job_id
+  properties:
+    success:
+      type: boolean
+      example: true
+    job_id:
+      type: string
+      description: >
+        Идентификатор задания синхронизации.
+        Формат: {user_id}-{timestamp}-{random_hex}.
+        Используется для подписки на WebSocket-прогресс.
+      example: "1-1735000000-abc123f4"

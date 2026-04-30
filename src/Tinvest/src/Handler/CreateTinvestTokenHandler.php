@@ -11,6 +11,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use System\Exception\BadRequestException;
 use System\Exception\ConflictException;
+use System\Service\UseInputFilter;
 use Tinvest\Event\AccountsFetchedEvent;
 use Tinvest\InputFilter\TinvestTokenInputFilter;
 use Tinvest\Service\TinvestApiService;
@@ -19,6 +20,8 @@ use User\Service\UserService;
 
 final readonly class CreateTinvestTokenHandler implements RequestHandlerInterface
 {
+    use UseInputFilter;
+
     public function __construct(
         private TinvestTokenInputFilter $inputFilter,
         private UserService $userService,
@@ -33,10 +36,7 @@ final readonly class CreateTinvestTokenHandler implements RequestHandlerInterfac
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $this->inputFilter->setData($request->getParsedBody());
-        if (!$this->inputFilter->isValid()) {
-            throw BadRequestException::fromInputFilter($this->inputFilter);
-        }
+        $this->validateRequest($request->getParsedBody());
 
         try {
             $user = $this->userService->saveTinvestToken(

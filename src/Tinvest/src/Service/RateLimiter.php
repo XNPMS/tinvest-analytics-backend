@@ -8,44 +8,64 @@ use Tinvest\Enum\LimitTokens;
 
 final class RateLimiter
 {
-    private float $tokens = 0.0;
-    private float $lastTime = 0.0;
-    private int $maxTokensPerMinute = 0;
+    private const SECONDS_PER_MINUTE = 60.0;
+    private const REQUIRED_TOKENS = 1.0;
+    private const MICROSECONDS_IN_SECOND = 1_000_000;
 
-    public function setMaxTokens(LimitTokens $maxTokensPerMinute): self
+    private float $tokens;
+    private float $lastRefillTime;
+    private int $maxTokensPerMinute;
+    private float $refillRatePerSecond;
+
+    public function __construct(LimitTokens $maxTokensPerMinute)
     {
         $this->maxTokensPerMinute = $maxTokensPerMinute->value;
-        $this->tokens = $this->maxTokensPerMinute;
-        $this->lastTime = microtime(true);
+        $this->refillRatePerSecond = $this->maxTokensPerMinute / self::SECONDS_PER_MINUTE;
 
-        return $this;
+        $this->tokens = $this->maxTokensPerMinute;
+        $this->lastRefillTime = microtime(true);
     }
 
-    public function acquire(): void
+    public function consume(): void
     {
-        $now = microtime(true);
-        $elapsed = $now - $this->lastTime;
+        $this->refill();
 
-        // Пополняем токены
-        $this->tokens = min(
-            $this->maxTokensPerMinute,
-            $this->tokens + $elapsed * ($this->maxTokensPerMinute / 60.0)
-        );
-        $this->lastTime = $now;
-
-        // Если есть токен - забираем и выходим
-        if ($this->tokens >= 1.0) {
-            $this->tokens -= 1.0;
+        if ($this->tokens >= self::REQUIRED_TOKENS) {
+            $this->tokens -= self::REQUIRED_TOKENS;
 
             return;
         }
 
-        // Ждем появления токена
-        $wait = (1.0 - $this->tokens) / ($this->maxTokensPerMinute / 60.0);
-        usleep((int)($wait * 1_000_000));
+        $this->waitForNextToken();
+        $this->refill();
 
-        // Обновляем состояние после ожидания
-        $this->tokens = 0.0;
-        $this->lastTime = microtime(true);
+        $this->tokens = max(0.0, $this->tokens - self::REQUIRED_TOKENS);
+    }
+
+    private function refill(): void
+    {
+        $now = microtime(true);
+        $elapsed = $now - $this->lastRefillTime;
+
+        if ($elapsed <= 0) {
+            return;
+        }
+
+        $this->tokens = min(
+            $this->maxTokensPerMinute,
+            $this->tokens + $elapsed * $this->refillRatePerSecond
+        );
+
+        $this->lastRefillTime = $now;
+    }
+
+    private function waitForNextToken(): void
+    {
+        $missingTokens = self::REQUIRED_TOKENS - $this->tokens;
+        $waitSeconds = $missingTokens / $this->refillRatePerSecond;
+
+        if ($waitSeconds > 0) {
+            usleep((int)($waitSeconds * self::MICROSECONDS_IN_SECOND));
+        }
     }
 }

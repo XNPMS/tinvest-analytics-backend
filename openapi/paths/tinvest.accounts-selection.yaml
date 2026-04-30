@@ -1,0 +1,64 @@
+post:
+  tags:
+    - Tinvest
+  summary: Выбрать счета для синхронизации
+  operationId: tinvestAccountsSelection
+  description: >
+    Принимает список DB ID счетов (из таблицы `tinvest_accounts`), которые пользователь
+    выбрал для синхронизации, и ставит задачу в очередь RabbitMQ
+    (`sync.tinvest.accounts`).
+
+    Возвращает `job_id` — идентификатор задания.
+    Клиент подключается к WebSocket `ws://host:8081` и подписывается на прогресс:
+    ```json
+    {"action": "subscribe", "job_id": "<job_id>"}
+    ```
+
+    Сервер рассылает обновления раз в секунду:
+    ```json
+    {
+      "job_id": "1-1735000000-abc123f4",
+      "accounts": {
+        "42": {"status": 1, "synced_count": 1500, "error": null, "updated_at": 1735000060},
+        "43": {"status": 2, "synced_count": 3200, "error": null, "updated_at": 1735000090}
+      }
+    }
+    ```
+    Статусы: `0` — PENDING, `1` — RUNNING, `2` — COMPLETED, `3` — FAILED.
+
+    Если для счёта уже запущена активная синхронизация (PENDING/RUNNING),
+    повторный запрос для этого счёта будет проигнорирован воркером.
+  security:
+    - cookieAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - account_ids
+          properties:
+            account_ids:
+              type: array
+              description: >
+                Числовые DB ID счетов из таблицы `tinvest_accounts`
+                (не строковые Tinkoff account_id).
+              minItems: 1
+              items:
+                type: integer
+              example: [1, 2]
+  responses:
+    "200":
+      description: Задание поставлено в очередь.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas.yaml#/SyncJobResponse"
+          example:
+            success: true
+            job_id: "1-1735000000-abc123f4"
+    "400":
+      $ref: "../components/responses.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"

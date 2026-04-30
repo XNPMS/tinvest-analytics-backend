@@ -6,7 +6,7 @@ namespace System\Queue\Enum;
 
 use Tinvest\Worker\SyncTinvestAccountWorker;
 
-enum QueueName: string
+enum Workers: string
 {
     case SYNC_TINVEST_ACCOUNTS = 'sync.tinvest.accounts';
 

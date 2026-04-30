@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace Tinvest\Message;
 
-use User\Entity\User;
-
 final readonly class AccountsMessage implements MessageInterface
 {
     public function __construct(
-        public array|User $user,
+        public int $userId,
         public array $accountIds,
     ) {
     }
@@ -17,7 +15,7 @@ final readonly class AccountsMessage implements MessageInterface
     public static function fromArray(array $data): AccountsMessage
     {
         return new self(
-            $data['user'],
+            $data['user_id'],
             $data['account_ids'],
         );
     }
@@ -25,7 +23,7 @@ final readonly class AccountsMessage implements MessageInterface
     public function toArray(): array
     {
         return [
-            'user' => $this->user,
+            'user_id' => $this->userId,
             'account_ids' => $this->accountIds,
         ];
     }

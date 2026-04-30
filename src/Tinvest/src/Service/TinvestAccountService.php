@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tinvest\Service;
 
+use Tinvest\Entity\TinvestAccount;
 use Tinvest\Repository\TinvestAccountRepository;
 
 readonly class TinvestAccountService
@@ -29,5 +30,15 @@ readonly class TinvestAccountService
                     ['user_id', 'account_id', 'type', 'status', 'name', 'opened_date', 'access_level'],
                 );
         }
+    }
+
+    public function getTinvestAccountByUserIdAndAccountId(int $userId, string $accountId): ?TinvestAccount
+    {
+        return $this->tinvestAccountRepository->getTinvestAccountByUserIdAndAccountId($userId, $accountId);
+    }
+
+    public function getTinvestAccountById(int $id, int $userId): ?TinvestAccount
+    {
+        return $this->tinvestAccountRepository->getTinvestAccountByIdAndUserId($id, $userId);
     }
 }

@@ -1,0 +1,16 @@
+get:
+  tags:
+    - System
+  summary: Проверка доступности API
+  operationId: ping
+  responses:
+    "200":
+      description: Сервис работает
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ack:
+                type: string
+                example: "pong"

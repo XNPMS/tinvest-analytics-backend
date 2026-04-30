@@ -9,3 +9,7 @@
 .idea
 .env
 /keys/*
+
+# OpenAPI bundle output
+/openapi/bundle/
+/openapi/node_modules/

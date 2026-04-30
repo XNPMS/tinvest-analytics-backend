@@ -1,0 +1,97 @@
+openapi: "3.0.3"
+
+info:
+  title: Tinvest Analytics API
+  version: "1.0.0"
+  description: >
+    REST API для платформы аналитики T-Invest портфеля.
+
+    ## Аутентификация
+
+    Используется cookie-based JWT.
+    После логина/регистрации устанавливаются два cookie:
+    - `access_token` — короткоживущий JWT (15 мин), используется для всех защищённых ручек
+    - `refresh_token` — долгоживущий httpOnly cookie (30 дней)
+
+    ## WebSocket
+
+    После запуска синхронизации подключитесь к `ws://host:8081` и отправьте:
+    ```json
+    {"action": "subscribe", "job_id": "<job_id из accounts/selection>"}
+    ```
+    Сервер будет рассылать обновления прогресса раз в секунду.
+
+servers:
+  - url: http://localhost:8080
+    description: Локальная разработка
+
+tags:
+  - name: System
+    description: Служебные ручки
+  - name: Auth
+    description: Регистрация, вход и выход
+  - name: Tinvest
+    description: Интеграция с T-Invest API
+
+security: []
+
+components:
+  securitySchemes:
+    cookieAuth:
+      $ref: "./components/securitySchemes.yaml#/cookieAuth"
+  schemas:
+    ProblemDetails:
+      $ref: "./components/schemas.yaml#/ProblemDetails"
+    ValidationError:
+      $ref: "./components/schemas.yaml#/ValidationError"
+    UserAuthSuccess:
+      $ref: "./components/schemas.yaml#/UserAuthSuccess"
+    TinvestAccount:
+      $ref: "./components/schemas.yaml#/TinvestAccount"
+    TinvestAccountsResponse:
+      $ref: "./components/schemas.yaml#/TinvestAccountsResponse"
+    SyncJobResponse:
+      $ref: "./components/schemas.yaml#/SyncJobResponse"
+  responses:
+    BadRequest:
+      $ref: "./components/responses.yaml#/BadRequest"
+    Unauthorized:
+      $ref: "./components/responses.yaml#/Unauthorized"
+    Forbidden:
+      $ref: "./components/responses.yaml#/Forbidden"
+    NotFound:
+      $ref: "./components/responses.yaml#/NotFound"
+    Conflict:
+      $ref: "./components/responses.yaml#/Conflict"
+
+# ─── Endpoints ────────────────────────────────────────────────────────────────
+# Каждый путь описан в отдельном файле openapi/paths/*.yaml
+
+paths:
+  /api/ping:
+    $ref: "./paths/ping.yaml"
+
+  /api/auth/register:
+    $ref: "./paths/auth.register.yaml"
+
+  /api/auth/login:
+    $ref: "./paths/auth.login.yaml"
+
+  /api/auth/logout:
+    $ref: "./paths/auth.logout.yaml"
+
+  /api/v1/tinvest/token:
+    $ref: "./paths/tinvest.token.yaml"
+
+  /api/v1/tinvest/accounts/selection:
+    $ref: "./paths/tinvest.accounts-selection.yaml"
+
+
+## Команды:
+#  cd openapi
+#  npm install
+#
+#  npm run lint        # валидация спецификации
+#  npm run build       # → bundle/openapi.bundle.yaml (один файл, все $ref инлайнены)
+#  npm run build:json  # → bundle/openapi.bundle.json
+#  npm run preview     # локальный предпросмотр Redoc на http://localhost:8080

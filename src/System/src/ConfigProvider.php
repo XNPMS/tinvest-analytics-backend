@@ -9,11 +9,16 @@ use Laminas\Cache\Service\StorageCacheFactory;
 use Laminas\Cache\Storage\Adapter\Memcached;
 use Laminas\EventManager\EventManager;
 use Laminas\ServiceManager\AbstractFactory\ReflectionBasedAbstractFactory;
+use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
 use System\Delegator\EventManagerDelegator;
 use System\Factory\InputFilterMessageResolverFactory;
+use System\Factory\LoggerServiceFactory;
 use System\Factory\MemcachedFactory;
+use System\Factory\WebSocketServerCommandFactory;
 use System\Queue\Command\QueueWorkerCommand;
+use System\Queue\Command\WebSocketServerCommand;
 use System\Queue\Config\RabbitMQConfig;
 use System\Queue\Factory\QueueWorkerCommandFactory;
 use System\Queue\Factory\RabbitMQConfigFactory;
@@ -44,17 +49,9 @@ class ConfigProvider
     {
         return [
             'abstract_factories' => [ReflectionBasedAbstractFactory::class],
-            'aliases' => [
-                CacheInterface::class => SimpleCacheDecorator::class,
-            ],
+            'aliases' => $this->getAliases(),
+            'factories'  => $this->getFactories(),
             'invokables' => [],
-            'factories'  => [
-                InputFilterMessageResolver::class => InputFilterMessageResolverFactory::class,
-                Memcached::class => StorageCacheFactory::class,
-                SimpleCacheDecorator::class => MemcachedFactory::class,
-                RabbitMQConfig::class => RabbitMQConfigFactory::class,
-                QueueWorkerCommand::class => QueueWorkerCommandFactory::class,
-            ],
             'delegators' => [
                 EventManager::class => [EventManagerDelegator::class],
             ],
@@ -65,8 +62,30 @@ class ConfigProvider
     {
         return [
             'commands' => [
-                QueueWorkerCommand::COMMAND_NAME => QueueWorkerCommand::class,
+                QueueWorkerCommand::COMMAND_NAME    => QueueWorkerCommand::class,
+                WebSocketServerCommand::COMMAND_NAME => WebSocketServerCommand::class,
             ],
+        ];
+    }
+
+    private function getAliases(): array
+    {
+        return [
+            CacheInterface::class => SimpleCacheDecorator::class,
+            LoggerInterface::class => Logger::class,
+        ];
+    }
+
+    private function getFactories(): array
+    {
+        return [
+            InputFilterMessageResolver::class => InputFilterMessageResolverFactory::class,
+            Memcached::class => StorageCacheFactory::class,
+            SimpleCacheDecorator::class => MemcachedFactory::class,
+            RabbitMQConfig::class => RabbitMQConfigFactory::class,
+            QueueWorkerCommand::class => QueueWorkerCommandFactory::class,
+            Logger::class                  => LoggerServiceFactory::class,
+            WebSocketServerCommand::class  => WebSocketServerCommandFactory::class,
         ];
     }
 }
