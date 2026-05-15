@@ -10,21 +10,24 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use System\Enum\SuccessFailureEnum;
 use System\Exception\BadRequestException;
+use System\Exception\NotFoundException;
 use System\Queue\Enum\Workers;
 use System\Queue\Producer\QueueManager;
-use System\Service\UseInputFilter;
+use System\Service\UseInputFilterTrait;
 use Tinvest\InputFilter\TinvestAccountIdsInputFilter;
 use Tinvest\Message\AccountsMessage;
+use Tinvest\Repository\TinvestAccountRepository;
 use User\Entity\User;
 use User\Enum\OnboardingStep;
 use User\Service\UserService;
 
-final readonly class TinvestAccountsSelectionHandler implements RequestHandlerInterface
+final readonly class OnboardingAccountsHandler implements RequestHandlerInterface
 {
-    use UseInputFilter;
+    use UseInputFilterTrait;
 
     public function __construct(
         private TinvestAccountIdsInputFilter $inputFilter,
+        private TinvestAccountRepository $repository,
         private QueueManager $queueManager,
         private UserService $userService,
     ) {
@@ -32,6 +35,7 @@ final readonly class TinvestAccountsSelectionHandler implements RequestHandlerIn
 
     /**
      * @throws BadRequestException
+     * @throws NotFoundException
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
@@ -39,12 +43,19 @@ final readonly class TinvestAccountsSelectionHandler implements RequestHandlerIn
 
         /** @var User $user */
         $user = $request->getAttribute(User::class);
+        $userId = $user->getId();
+        $accountIds = $this->inputFilter->getValue('account_ids');
+
+        $accounts = $this->repository->findByIds($userId, $accountIds, count($accountIds));
+        if ($accounts->isEmpty()) {
+            throw NotFoundException::create('Accounts not found');
+        }
 
         $jobId = $this->queueManager->send(
-            Workers::SYNC_TINVEST_ACCOUNTS,
+            Workers::SYNC_ONBOARDING_ACCOUNTS,
             new AccountsMessage(
-                $user->getId(),
-                $this->inputFilter->getValue('account_ids')
+                $userId,
+                array_unique($accounts->pluck('account_id')->toArray()),
             )
         );
 
