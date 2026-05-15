@@ -10,14 +10,14 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use System\Enum\SuccessFailureEnum;
 use System\Exception\BadRequestException;
-use System\Exception\NotFoundException;
 use System\Queue\Enum\Workers;
 use System\Queue\Producer\QueueManager;
 use System\Service\UseInputFilter;
 use Tinvest\InputFilter\TinvestAccountIdsInputFilter;
 use Tinvest\Message\AccountsMessage;
-use Tinvest\UseCase\SyncOperationsUseCase;
 use User\Entity\User;
+use User\Enum\OnboardingStep;
+use User\Service\UserService;
 
 final readonly class TinvestAccountsSelectionHandler implements RequestHandlerInterface
 {
@@ -26,30 +26,29 @@ final readonly class TinvestAccountsSelectionHandler implements RequestHandlerIn
     public function __construct(
         private TinvestAccountIdsInputFilter $inputFilter,
         private QueueManager $queueManager,
-        private SyncOperationsUseCase $syncOperationsUseCase,
+        private UserService $userService,
     ) {
     }
 
     /**
      * @throws BadRequestException
-     * @throws NotFoundException
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $this->validateRequest($request->getParsedBody());
 
-//        $this->syncOperationsUseCase->execute(new AccountsMessage(
-//            (int)$request->getAttribute(User::class)->getId(),
-//            $this->inputFilter->getValue('account_ids')
-//        ));
+        /** @var User $user */
+        $user = $request->getAttribute(User::class);
 
         $jobId = $this->queueManager->send(
             Workers::SYNC_TINVEST_ACCOUNTS,
             new AccountsMessage(
-                (int)$request->getAttribute(User::class)->getId(),
+                $user->getId(),
                 $this->inputFilter->getValue('account_ids')
             )
         );
+
+        $this->userService->updateOnboardingStep($user, OnboardingStep::SYNCING);
 
         return new JsonResponse([
             SuccessFailureEnum::SUCCESS->value => true,

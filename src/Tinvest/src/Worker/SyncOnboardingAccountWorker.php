@@ -11,9 +11,9 @@ use System\Queue\Worker\AbstractWorker;
 use Tinvest\Message\AccountsMessage;
 use Tinvest\UseCase\SyncOperationsUseCase;
 
-class SyncTinvestAccountWorker extends AbstractWorker
+class SyncOnboardingAccountWorker extends AbstractWorker
 {
-    protected Workers $queueName = Workers::SYNC_TINVEST_ACCOUNTS;
+    protected Workers $queueName = Workers::;
 
     public function __construct(
         private readonly RabbitMQ $rabbitMQ,
