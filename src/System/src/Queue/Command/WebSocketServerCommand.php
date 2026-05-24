@@ -4,25 +4,32 @@ declare(strict_types=1);
 
 namespace System\Queue\Command;
 
+use Psr\Log\LoggerInterface;
 use Ratchet\Http\HttpServer;
 use Ratchet\Server\IoServer;
 use Ratchet\WebSocket\WsServer;
-use React\EventLoop\Loop;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use System\Queue\Config\WebSocketConfig;
 use Tinvest\WebSocket\SyncProgressWsApp;
 
 class WebSocketServerCommand extends Command
 {
     public const COMMAND_NAME = 'websocket:server';
-
-    /** Интервал рассылки прогресса в секундах */
+    /**
+     * Интервал рассылки прогресса в секундах
+     */
     private const BROADCAST_INTERVAL = 1.0;
+    /**
+     * Интервал keepalive-ping чтобы nginx не рвал idle-соединение
+     */
+    private const PING_INTERVAL = 15.0;
 
     public function __construct(
         private readonly SyncProgressWsApp $wsApp,
-        private readonly int $port,
+        private readonly LoggerInterface $logger,
+        private readonly WebSocketConfig $config,
     ) {
         parent::__construct(self::COMMAND_NAME);
     }
@@ -34,22 +41,21 @@ class WebSocketServerCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln(sprintf('<info>Starting WebSocket server on port %d...</info>', $this->port));
+        $this->logger->info(sprintf('Starting WebSocket server on port %d...', $this->config->port));
 
-        $loop   = Loop::get();
-        $server = IoServer::factory(
-            new HttpServer(new WsServer($this->wsApp)),
-            $this->port,
-            '0.0.0.0',
-            $loop,
-        );
+        $server = IoServer::factory(new HttpServer(new WsServer($this->wsApp)), $this->config->port);
 
         // Каждую секунду рассылаем обновления прогресса подписчикам
-        $loop->addPeriodicTimer(self::BROADCAST_INTERVAL, function () {
+        $server->loop->addPeriodicTimer(self::BROADCAST_INTERVAL, function () {
             $this->wsApp->broadcastAll();
         });
 
-        $output->writeln('<info>WebSocket server started. Waiting for connections...</info>');
+        // Keepalive ping чтобы nginx не рвал idle-соединение
+        $server->loop->addPeriodicTimer(self::PING_INTERVAL, function () {
+            $this->wsApp->pingAll();
+        });
+
+        $this->logger->info('WebSocket server started. Waiting for connections...');
         $server->run();
 
         return Command::SUCCESS;

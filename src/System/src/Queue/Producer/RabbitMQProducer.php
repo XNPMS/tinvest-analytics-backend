@@ -21,7 +21,7 @@ readonly class RabbitMQProducer implements QueueProducerInterface
      */
     public function __construct(
         private RabbitMQ $rabbit,
-        private Workers  $queue,
+        private Workers $queue,
     ) {
         $this->channel = $this->rabbit->getConnection()->channel();
         $this->channel->queue_declare(

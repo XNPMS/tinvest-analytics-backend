@@ -8,5 +8,5 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 interface QueueWorkerInterface
 {
-    public function execute(OutputInterface $output): void;
+    public function execute(OutputInterface $output, WorkerOptions $options): void;
 }

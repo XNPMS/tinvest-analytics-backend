@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace System\Exception;
+namespace System\Exception\Http;
 
 use Fig\Http\Message\StatusCodeInterface;
 use Laminas\InputFilter\InputFilterInterface;
@@ -39,7 +39,7 @@ final class BadRequestException extends \Exception implements ProblemDetailsExce
         $exception->detail = 'Invalid request data';
         $exception->status = StatusCodeInterface::STATUS_BAD_REQUEST;
         $exception->additional = [
-            'errors_validation' => $inputFilter->getMessages()
+            'errors_validation' => $inputFilter->getMessages(),
         ];
 
         return $exception;

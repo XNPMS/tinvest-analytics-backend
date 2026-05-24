@@ -1,6 +1,8 @@
 <?php
 
-namespace System\Exception;
+declare(strict_types=1);
+
+namespace System\Exception\Http;
 
 use Exception;
 use Fig\Http\Message\StatusCodeInterface;

@@ -12,6 +12,9 @@ use Psr\SimpleCache\CacheInterface;
 
 class MemcachedFactory implements FactoryInterface
 {
+    /**
+     * @inheritDoc
+     */
     public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null): CacheInterface
     {
         return new SimpleCacheDecorator($container->get(Memcached::class));

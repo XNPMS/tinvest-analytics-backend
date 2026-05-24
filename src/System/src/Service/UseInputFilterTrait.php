@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace System\Service;
 
 use Laminas\InputFilter\InputFilterInterface;
-use System\Exception\BadRequestException;
+use System\Exception\Http\BadRequestException;
 
-trait UseInputFilter
+trait UseInputFilterTrait
 {
     /**
-     * Валидирует данные запроса через InputFilter
+     * Валидирует данные запроса через InputFilter.
      * Возвращает валидированные значения
      *
      * @throws BadRequestException

@@ -16,15 +16,16 @@ use System\Delegator\EventManagerDelegator;
 use System\Factory\InputFilterMessageResolverFactory;
 use System\Factory\LoggerServiceFactory;
 use System\Factory\MemcachedFactory;
-use System\Factory\WebSocketServerCommandFactory;
+use System\Http\Strategy\JsonResponseStrategy;
+use System\Http\Strategy\ResponseStrategyInterface;
 use System\Queue\Command\QueueWorkerCommand;
 use System\Queue\Command\WebSocketServerCommand;
 use System\Queue\Config\RabbitMQConfig;
+use System\Queue\Config\WebSocketConfig;
 use System\Queue\Factory\QueueWorkerCommandFactory;
 use System\Queue\Factory\RabbitMQConfigFactory;
+use System\Queue\Factory\WebSocketConfigFactory;
 use System\Service\InputFilterMessageResolver;
-use Tinvest\Event\AccountsFetchedEvent;
-use Tinvest\EventListener\SaveAccountsListener;
 
 class ConfigProvider
 {
@@ -50,11 +51,9 @@ class ConfigProvider
         return [
             'abstract_factories' => [ReflectionBasedAbstractFactory::class],
             'aliases' => $this->getAliases(),
-            'factories'  => $this->getFactories(),
+            'factories' => $this->getFactories(),
             'invokables' => [],
-            'delegators' => [
-                EventManager::class => [EventManagerDelegator::class],
-            ],
+            'delegators' => $this->getDelegators(),
         ];
     }
 
@@ -62,7 +61,7 @@ class ConfigProvider
     {
         return [
             'commands' => [
-                QueueWorkerCommand::COMMAND_NAME    => QueueWorkerCommand::class,
+                QueueWorkerCommand::COMMAND_NAME => QueueWorkerCommand::class,
                 WebSocketServerCommand::COMMAND_NAME => WebSocketServerCommand::class,
             ],
         ];
@@ -73,6 +72,7 @@ class ConfigProvider
         return [
             CacheInterface::class => SimpleCacheDecorator::class,
             LoggerInterface::class => Logger::class,
+            ResponseStrategyInterface::class => JsonResponseStrategy::class,
         ];
     }
 
@@ -83,9 +83,16 @@ class ConfigProvider
             Memcached::class => StorageCacheFactory::class,
             SimpleCacheDecorator::class => MemcachedFactory::class,
             RabbitMQConfig::class => RabbitMQConfigFactory::class,
+            WebSocketConfig::class => WebSocketConfigFactory::class,
             QueueWorkerCommand::class => QueueWorkerCommandFactory::class,
-            Logger::class                  => LoggerServiceFactory::class,
-            WebSocketServerCommand::class  => WebSocketServerCommandFactory::class,
+            Logger::class => LoggerServiceFactory::class,
+        ];
+    }
+
+    private function getDelegators(): array
+    {
+        return [
+            EventManager::class => [EventManagerDelegator::class],
         ];
     }
 }
