@@ -15,7 +15,7 @@ readonly class TinvestAccountService
     {
     }
 
-    public function createTinvestAccounts(int $userId, array $accounts): void
+    public function createTinvestAccounts(string $userId, array $accounts): void
     {
         $accounts = array_map(
             static fn(array $account): array => $account + ['user_id' => $userId],
@@ -32,13 +32,13 @@ readonly class TinvestAccountService
         }
     }
 
-    public function getTinvestAccountByUserIdAndAccountId(int $userId, string $accountId): ?TinvestAccount
+    public function getTinvestAccountByUserIdAndAccountId(string $userId, string $accountId): ?TinvestAccount
     {
         return $this->tinvestAccountRepository->getTinvestAccountByUserIdAndAccountId($userId, $accountId);
     }
 
-    public function getTinvestAccountById(int $id, int $userId): ?TinvestAccount
+    public function getTinvestAccountById(int $accountId, string $userId): ?TinvestAccount
     {
-        return $this->tinvestAccountRepository->getTinvestAccountByIdAndUserId($id, $userId);
+        return $this->tinvestAccountRepository->getTinvestAccountByIdAndUserId($accountId, $userId);
     }
 }

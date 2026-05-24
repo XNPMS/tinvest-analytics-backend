@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Tinvest\Service;
 
-use Tinvest\DTO\TinvestOperationDto;
-use Tinvest\Entity\TinvestOperation;
+use Tinvest\DTO\TinvestOperation as TinvestOperationDTO;
 use Tinvest\Repository\TinvestOperationRepository;
 
 class TinvestOperationService
@@ -24,19 +23,12 @@ class TinvestOperationService
         }
 
         $rows = array_map(
-            static function (TinvestOperationDto $dto) use ($accountId) {
+            static function (TinvestOperationDTO $dto) use ($accountId) {
                 return $dto->toArray() + ['account_id' => $accountId];
             },
             $batch
         );
 
         $this->repository->insertBatch($rows);
-    }
-
-    public function getOperationsByAccountId(int $accountId): ?TinvestOperation
-    {
-        return $this->repository->createQueryBuilder()
-            ->where($accountId, '=', 'account_id')
-            ->first();
     }
 }

@@ -20,8 +20,13 @@ readonly class TinvestSyncProcessesService
         return $this->repository->findActiveByAccountId($accountId);
     }
 
+    public function findLatestByAccountId(int $accountId): ?TinvestSyncProcesses
+    {
+        return $this->repository->findLatestByAccountId($accountId);
+    }
+
     public function createProcess(
-        int $userId,
+        string $userId,
         int $accountId,
         string $jobId,
         SyncAction $action,
@@ -40,9 +45,16 @@ readonly class TinvestSyncProcessesService
         return $process;
     }
 
-    public function updateSyncedCount(TinvestSyncProcesses $process, int $syncedCount): void
+    public function setTotalCount(TinvestSyncProcesses $process, int $totalCount): void
+    {
+        $process->setTotalCount($totalCount);
+        $process->save();
+    }
+
+    public function updateSyncedCount(TinvestSyncProcesses $process, int $syncedCount, int $progress): void
     {
         $process->setSyncedCount($syncedCount);
+        $process->setProgress($progress);
         $process->save();
     }
 
