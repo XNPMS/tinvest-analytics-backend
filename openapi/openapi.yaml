@@ -15,9 +15,9 @@ info:
 
     ## WebSocket
 
-    После запуска синхронизации подключитесь к `ws://host:8081` и отправьте:
+    После запуска синхронизации подключитесь к `wss://host/ws` и отправьте:
     ```json
-    {"action": "subscribe", "job_id": "<job_id из accounts/selection>"}
+    {"action": "subscribe", "job_id": "<job_id из onboarding/accounts>"}
     ```
     Сервер будет рассылать обновления прогресса раз в секунду.
 
@@ -30,8 +30,12 @@ tags:
     description: Служебные ручки
   - name: Auth
     description: Регистрация, вход и выход
-  - name: Tinvest
-    description: Интеграция с T-Invest API
+  - name: User
+    description: Профиль и состояние пользователя
+  - name: Onboarding
+    description: Подключение T-Invest токена и выбор счетов
+  - name: Dashboard
+    description: Аналитика портфеля
 
 security: []
 
@@ -46,12 +50,20 @@ components:
       $ref: "./components/schemas.yaml#/ValidationError"
     UserAuthSuccess:
       $ref: "./components/schemas.yaml#/UserAuthSuccess"
+    UserState:
+      $ref: "./components/schemas.yaml#/UserState"
     TinvestAccount:
       $ref: "./components/schemas.yaml#/TinvestAccount"
     TinvestAccountsResponse:
       $ref: "./components/schemas.yaml#/TinvestAccountsResponse"
     SyncJobResponse:
       $ref: "./components/schemas.yaml#/SyncJobResponse"
+    DashboardSummary:
+      $ref: "./components/schemas.yaml#/DashboardSummary"
+    PortfolioHistoryPoint:
+      $ref: "./components/schemas.yaml#/PortfolioHistoryPoint"
+    PortfolioHistoryResponse:
+      $ref: "./components/schemas.yaml#/PortfolioHistoryResponse"
   responses:
     BadRequest:
       $ref: "./components/responses.yaml#/BadRequest"
@@ -80,11 +92,20 @@ paths:
   /api/auth/logout:
     $ref: "./paths/auth.logout.yaml"
 
-  /api/v1/tinvest/token:
-    $ref: "./paths/tinvest.token.yaml"
+  /api/v1/user/state:
+    $ref: "./paths/user.state.yaml"
 
-  /api/v1/tinvest/accounts/selection:
-    $ref: "./paths/tinvest.accounts-selection.yaml"
+  /api/v1/onboarding/token:
+    $ref: "./paths/onboarding.token.yaml"
+
+  /api/v1/onboarding/accounts:
+    $ref: "./paths/onboarding.accounts.yaml"
+
+  /api/v1/dashboard/summary:
+    $ref: "./paths/dashboard.summary.yaml"
+
+  /api/v1/portfolio/history:
+    $ref: "./paths/portfolio.history.yaml"
 
 
 ## Команды:

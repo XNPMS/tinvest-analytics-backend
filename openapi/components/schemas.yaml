@@ -113,6 +113,135 @@ TinvestAccountsResponse:
       items:
         $ref: "#/TinvestAccount"
 
+# ─── User ─────────────────────────────────────────────────────────────────────
+
+UserState:
+  type: object
+  required:
+    - id
+    - email
+    - onboarding_step
+    - has_broker_token
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    email:
+      type: string
+      format: email
+      example: "user@example.com"
+    onboarding_step:
+      type: string
+      enum:
+        - token_missing
+        - accounts_pending
+        - syncing
+        - ready
+      description: >
+        Текущий шаг онбординга:
+        `token_missing` — токен не добавлен,
+        `accounts_pending` — счета не выбраны,
+        `syncing` — синхронизация в процессе,
+        `ready` — платформа готова.
+      example: "ready"
+    has_broker_token:
+      type: boolean
+      description: Есть ли активный токен T-Invest API
+      example: true
+
+# ─── Dashboard ────────────────────────────────────────────────────────────────
+
+DashboardSummary:
+  type: object
+  required:
+    - total_value_rub
+    - unrealized_pnl_rub
+    - twr_percent
+    - dividends_rub
+  properties:
+    total_value_rub:
+      type: number
+      format: float
+      description: Суммарная стоимость портфеля по всем счетам в рублях
+      example: 1250000.50
+    unrealized_pnl_rub:
+      type: number
+      format: float
+      description: Нереализованный P&L (ожидаемая доходность открытых позиций) в рублях
+      example: 87500.25
+    twr_percent:
+      type: number
+      format: float
+      description: Накопленная доходность по методу TWR (Time-Weighted Return) в процентах
+      example: 12.34
+    dividends_rub:
+      type: number
+      format: float
+      description: Суммарные дивиденды по всем счетам в рублях
+      example: 15600.00
+
+PortfolioHistoryPoint:
+  type: object
+  required:
+    - date
+    - total_value_rub
+    - cash_flow_rub
+    - twr_factor
+  properties:
+    date:
+      type: string
+      format: date
+      example: "2024-01-15"
+    total_value_rub:
+      type: number
+      format: float
+      description: Стоимость портфеля на конец дня в рублях
+      example: 1012000.00
+    cash_flow_rub:
+      type: number
+      format: float
+      description: Внешний денежный поток за день (пополнения и выводы) в рублях
+      example: 0.00
+    twr_factor:
+      type: number
+      format: float
+      description: Дневной TWR-множитель (HPR = end_value / (prev_value + cash_flow))
+      example: 1.012
+
+PortfolioHistoryResponse:
+  type: object
+  required:
+    - data
+    - summary
+  properties:
+    data:
+      type: array
+      items:
+        $ref: "#/PortfolioHistoryPoint"
+    summary:
+      type: object
+      required:
+        - twr_percent
+        - first_value
+        - last_value
+      properties:
+        twr_percent:
+          type: number
+          format: float
+          description: Накопленная TWR-доходность за период в процентах
+          example: 1.20
+        first_value:
+          type: number
+          format: float
+          description: Стоимость портфеля на начало периода в рублях
+          example: 1000000.00
+        last_value:
+          type: number
+          format: float
+          description: Стоимость портфеля на конец периода в рублях
+          example: 1012000.00
+
 SyncJobResponse:
   type: object
   required:

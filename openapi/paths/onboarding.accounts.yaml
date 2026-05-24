@@ -1,15 +1,15 @@
 post:
   tags:
-    - Tinvest
+    - Onboarding
   summary: Выбрать счета для синхронизации
-  operationId: tinvestAccountsSelection
+  operationId: onboardingSelectAccounts
   description: >
     Принимает список DB ID счетов (из таблицы `tinvest_accounts`), которые пользователь
     выбрал для синхронизации, и ставит задачу в очередь RabbitMQ
-    (`sync.tinvest.accounts`).
+    (`sync.onboarding.accounts`).
 
     Возвращает `job_id` — идентификатор задания.
-    Клиент подключается к WebSocket `ws://host:8081` и подписывается на прогресс:
+    Клиент подключается к WebSocket `wss://host/ws` и подписывается на прогресс:
     ```json
     {"action": "subscribe", "job_id": "<job_id>"}
     ```
@@ -19,8 +19,8 @@ post:
     {
       "job_id": "1-1735000000-abc123f4",
       "accounts": {
-        "42": {"status": 1, "synced_count": 1500, "error": null, "updated_at": 1735000060},
-        "43": {"status": 2, "synced_count": 3200, "error": null, "updated_at": 1735000090}
+        "42": {"status": 1, "synced_count": 1500, "total_count": 5000, "progress": 30, "error": null, "updated_at": 1735000060},
+        "43": {"status": 2, "synced_count": 3200, "total_count": 3200, "progress": 100, "error": null, "updated_at": 1735000090}
       }
     }
     ```

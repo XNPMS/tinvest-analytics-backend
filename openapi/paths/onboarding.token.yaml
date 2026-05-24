@@ -1,15 +1,15 @@
 post:
   tags:
-    - Tinvest
+    - Onboarding
   summary: Сохранить токен Tinkoff Invest и получить список счетов
-  operationId: tinvestSaveToken
+  operationId: onboardingSaveToken
   description: >
     Принимает персональный токен T-Invest API пользователя, сохраняет его
     и сразу запрашивает все брокерские счета через gRPC (GetAccounts).
     Счета сохраняются в таблицу `tinvest_accounts`.
 
     Возвращает список всех найденных счетов — пользователь выбирает
-    нужные и передаёт их в `/api/v1/tinvest/accounts/selection`.
+    нужные и передаёт их в `/api/v1/onboarding/accounts`.
 
     Если токен невалиден или gRPC-запрос упал — 400.
   security:
