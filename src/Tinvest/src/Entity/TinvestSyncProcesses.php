@@ -15,14 +15,14 @@ class TinvestSyncProcesses extends Model
     /** @var string */
     protected $table = self::TABLE;
 
-    public function setUserId(int $userId): void
+    public function setUserId(string $userId): void
     {
         $this->setAttribute('user_id', $userId);
     }
 
-    public function getUserId(): int
+    public function getUserId(): string
     {
-        return (int)$this->getAttributeFromArray('user_id');
+        return (string)$this->getAttributeFromArray('user_id');
     }
 
     public function setAccountId(int $accountId): void
@@ -85,6 +85,16 @@ class TinvestSyncProcesses extends Model
         return (int)$this->getAttributeFromArray('synced_count');
     }
 
+    public function setTotalCount(int $count): void
+    {
+        $this->setAttribute('total_count', $count);
+    }
+
+    public function getTotalCount(): int
+    {
+        return (int)$this->getAttributeFromArray('total_count');
+    }
+
     public function setErrorMessage(?string $errorMessage): void
     {
         $this->setAttribute('error_message', $errorMessage);
@@ -92,9 +102,7 @@ class TinvestSyncProcesses extends Model
 
     public function getErrorMessage(): ?string
     {
-        $value = $this->getAttributeFromArray('error_message');
-
-        return $value !== null ? (string)$value : null;
+        return $this->getAttributeFromArray('error_message') ?: null;
     }
 
     public function setStartedAt(\DateTimeImmutable $date): void
@@ -114,8 +122,6 @@ class TinvestSyncProcesses extends Model
 
     public function getFinishedAt(): ?string
     {
-        $value = $this->getAttributeFromArray('finished_at');
-
-        return $value !== null ? (string)$value : null;
+        return (string)$this->getAttributeFromArray('finished_at') ?: null;
     }
 }

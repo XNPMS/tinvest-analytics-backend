@@ -21,14 +21,14 @@ class TinvestAccount extends Model
         return (int)$this->getAttributeFromArray('id');
     }
 
-    public function getUserId(): int
+    public function getUserId(): string
     {
-        return (int)$this->getAttributeFromArray('user_id');
+        return (string)$this->getAttributeFromArray('user_id');
     }
 
-    public function getAccountId(): int
+    public function getAccountId(): string
     {
-        return (int)$this->getAttributeFromArray('account_id');
+        return (string)$this->getAttributeFromArray('account_id');
     }
 
     public function getName(): string
@@ -44,6 +44,11 @@ class TinvestAccount extends Model
     public function isSynced(): bool
     {
         return (bool)$this->getAttributeFromArray('is_synced');
+    }
+
+    public function markSynced(): void
+    {
+        $this->setAttribute('is_synced', true);
     }
 
     public function getStatus(): string
@@ -64,5 +69,25 @@ class TinvestAccount extends Model
     public function getAccessLevel(): string
     {
         return AccessLevel::name((int)$this->getAttributeFromArray('access_level'));
+    }
+
+    public function getLastSyncCursor(): ?string
+    {
+        return (string)$this->getAttributeFromArray('last_sync_cursor') ?: null;
+    }
+
+    public function setLastSyncCursor(?string $cursor): void
+    {
+        $this->setAttribute('last_sync_cursor', $cursor);
+    }
+
+    public function isClosed(): bool
+    {
+        return (bool)$this->getAttributeFromArray('is_closed');
+    }
+
+    public function getClosedDate(): ?string
+    {
+        return (string)$this->getAttributeFromArray('closed_date') ?: null;
     }
 }

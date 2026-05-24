@@ -24,6 +24,14 @@ readonly class TinvestSyncProcessesRepository extends AbstractEloquentRepository
             ->first();
     }
 
+    public function hasActiveByUserId(string $userId): bool
+    {
+        return $this->createQueryBuilder()
+            ->where('user_id', '=', $userId)
+            ->whereIn('status', [SyncStatus::PENDING->value, SyncStatus::RUNNING->value])
+            ->exists();
+    }
+
     public function findActiveByAccountId(int $accountId): ?TinvestSyncProcesses
     {
         /** @var TinvestSyncProcesses */

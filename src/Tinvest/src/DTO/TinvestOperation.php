@@ -4,55 +4,35 @@ declare(strict_types=1);
 
 namespace Tinvest\DTO;
 
-final readonly class TinvestOperationDto
+final readonly class TinvestOperation
 {
     private const NANO_DIVISOR = 1_000_000_000;
 
     public function __construct(
-        private string $operationId,
-        private ?string $parentOperationId,
-        private string $name,
-        private ?string $paymentCurrency,
-        private ?int $paymentUnits,
-        private ?int $paymentNano,
-        private ?string $price,
-        private int $state,
-        private float $quantity,
-        private float $quantityRest,
-        private ?string $figi,
-        private ?string $instrumentType,
-        private string $date,
-        private int $type,
-        private ?string $trades,
-        private ?string $assetUid,
-        private ?string $positionUid,
-        private ?string $ticker,
-        private string $classCode,
-        private ?string $instrumentUid,
-        private ?string $description,
-        private ?string $childOperations,
-        private float $commission = 0.0,
+        public string $operationId,
+        public ?string $parentOperationId,
+        public string $name,
+        public ?string $paymentCurrency,
+        public ?int $paymentUnits,
+        public ?int $paymentNano,
+        public ?string $price,
+        public int $state,
+        public float $quantity,
+        public float $quantityRest,
+        public ?string $figi,
+        public ?string $instrumentType,
+        public string $date,
+        public int $type,
+        public ?string $trades,
+        public ?string $assetUid,
+        public ?string $positionUid,
+        public ?string $ticker,
+        public string $classCode,
+        public ?string $instrumentUid,
+        public ?string $description,
+        public ?string $childOperations,
+        public float $commission = 0.0,
     ) {
-    }
-
-    public function getFigi(): ?string
-    {
-        return $this->figi ?: null;
-    }
-
-    public function getTicker(): ?string
-    {
-        return $this->ticker ?: null;
-    }
-
-    public function getInstrumentType(): ?string
-    {
-        return $this->instrumentType ?: null;
-    }
-
-    public function getPaymentCurrency(): ?string
-    {
-        return $this->paymentCurrency ?: null;
     }
 
     public function toArray(): array
