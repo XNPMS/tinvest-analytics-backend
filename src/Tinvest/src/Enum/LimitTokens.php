@@ -10,4 +10,6 @@ namespace Tinvest\Enum;
 enum LimitTokens: int
 {
     case MAX_TOKENS_SERVICE_OPERATIONS = 200;
+    case MAX_TOKENS_SERVICE_INSTRUMENTS = 100;
+    case MAX_TOKENS_MARKET_DATA = 50;
 }
