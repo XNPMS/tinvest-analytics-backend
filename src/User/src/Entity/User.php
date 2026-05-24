@@ -7,6 +7,7 @@ namespace User\Entity;
 use Auth\Entity\RefreshToken;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use User\Enum\OnboardingStep;
 
 class User extends Model
 {
@@ -14,15 +15,19 @@ class User extends Model
 
     /** @var string */
     protected $table = self::TABLE;
+    /** @var bool */
+    public $incrementing = false;
+    /** @var string */
+    protected $keyType = 'string';
 
     public function refreshTokens(): HasMany
     {
         return $this->hasMany(RefreshToken::class);
     }
 
-    public function getId(): int
+    public function getId(): string
     {
-        return (int)$this->getAttributeFromArray('id');
+        return (string)$this->getAttributeFromArray('id');
     }
 
     public function getEmail(): string
@@ -45,13 +50,38 @@ class User extends Model
         return (string)$this->getAttributeFromArray('password_hash');
     }
 
-    public function setTinvestToken(string $token): void
+    public function getOnboardingStep(): OnboardingStep
     {
-        $this->setAttribute('t_token', $token);
+        return OnboardingStep::from((string)$this->getAttributeFromArray('onboarding_step'));
     }
 
-    public function getTinvestToken(): ?string
+    public function setOnboardingStep(OnboardingStep $step): void
     {
-        return (string)$this->getAttributeFromArray('t_token');
+        $this->setAttribute('onboarding_step', $step->value);
+    }
+
+    public function isActive(): bool
+    {
+        return (bool)$this->getAttributeFromArray('is_active');
+    }
+
+    public function setIsActive(bool $active): void
+    {
+        $this->setAttribute('is_active', $active ? 1 : 0);
+    }
+
+    public function getEmailVerifiedAt(): ?string
+    {
+        return $this->getAttributeFromArray('email_verified_at') ?: null;
+    }
+
+    public function setEmailVerifiedAt(?string $datetime): void
+    {
+        $this->setAttribute('email_verified_at', $datetime);
+    }
+
+    public function isEmailVerified(): bool
+    {
+        return $this->getEmailVerifiedAt() !== null;
     }
 }
