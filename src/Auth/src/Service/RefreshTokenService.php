@@ -14,7 +14,7 @@ readonly class RefreshTokenService
     ) {
     }
 
-    public function createRefreshToken(int $userId, string $refreshToken, int $refreshTokenTtl): RefreshToken
+    public function createRefreshToken(string $userId, string $refreshToken, int $refreshTokenTtl): RefreshToken
     {
         $refreshTokenEntity = new RefreshToken();
 
@@ -31,7 +31,7 @@ readonly class RefreshTokenService
         return $this->refreshTokenRepository->getRefreshTokenByHash(hash('sha256', $refreshToken, true));
     }
 
-    public function revokeAllForUser(int $userId): int
+    public function revokeAllForUser(string $userId): int
     {
         return $this->refreshTokenRepository->revokeAllRefreshTokensForUser($userId);
     }

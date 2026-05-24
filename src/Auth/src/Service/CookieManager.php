@@ -16,7 +16,6 @@ readonly class CookieManager
     public const SET_COOKIE = 'Set-Cookie';
     public const STRICT = 'Strict';
 
-
     public function __construct(private CookieConfig $cookieConfig)
     {
     }

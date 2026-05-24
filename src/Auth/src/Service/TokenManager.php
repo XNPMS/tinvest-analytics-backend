@@ -32,8 +32,8 @@ readonly class TokenManager
     ) {
         $this->jwtConfig = Configuration::forAsymmetricSigner(
             new Sha256(),
-            InMemory::file($this->oauthConfig->jwtConfig->privateKeyPath),
-            InMemory::file($this->oauthConfig->jwtConfig->publicKeyPath)
+            InMemory::base64Encoded($this->oauthConfig->jwtConfig->privateKey),
+            InMemory::base64Encoded($this->oauthConfig->jwtConfig->publicKey)
         );
     }
 
@@ -101,11 +101,11 @@ readonly class TokenManager
 
             $constraints = [
                 new SignedWith($this->jwtConfig->signer(), $this->jwtConfig->verificationKey()),
-                new LooseValidAt(SystemClock::fromSystemTimezone())
+                new LooseValidAt(SystemClock::fromSystemTimezone()),
             ];
 
             if (!$this->jwtConfig->validator()->validate($token, ...$constraints)) {
-                throw new InvalidAccessTokenException();
+                throw new InvalidAccessTokenException('Invalid access token');
             }
 
             return $token;

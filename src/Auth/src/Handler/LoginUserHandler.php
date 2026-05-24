@@ -12,9 +12,9 @@ use Auth\Service\CookieManager;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use System\Exception\BadRequestException;
-use System\Exception\NotFoundException;
-use System\Exception\UnauthorizedException;
+use System\Exception\Http\BadRequestException;
+use System\Exception\Http\NotFoundException;
+use System\Exception\Http\UnauthorizedException;
 
 final readonly class LoginUserHandler extends BaseAuthHandler
 {
@@ -34,7 +34,10 @@ final readonly class LoginUserHandler extends BaseAuthHandler
     {
         try {
             $user = $this->authService->authenticate(
-                $this->validate($this->inputFilter, $request->getParsedBody())
+                $this->validate(
+                    $this->inputFilter,
+                    $request->getParsedBody()
+                )
             );
         } catch (UserRuntimeException $e) {
             throw NotFoundException::create($e->getMessage());

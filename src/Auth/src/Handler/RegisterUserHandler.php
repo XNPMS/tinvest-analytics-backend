@@ -11,8 +11,8 @@ use Auth\Service\CookieManager;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use System\Exception\BadRequestException;
-use System\Exception\ConflictException;
+use System\Exception\Http\BadRequestException;
+use System\Exception\Http\ConflictException;
 use User\Service\UserService;
 
 final readonly class RegisterUserHandler extends BaseAuthHandler
@@ -33,7 +33,10 @@ final readonly class RegisterUserHandler extends BaseAuthHandler
     {
         try {
             $user = $this->userService->createUser(
-                $this->validate($this->inputFilter, $request->getParsedBody())
+                $this->validate(
+                    $this->inputFilter,
+                    $request->getParsedBody()
+                )
             );
         } catch (UserRuntimeException $e) {
             throw ConflictException::create($e->getMessage());

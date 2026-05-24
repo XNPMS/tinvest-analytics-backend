@@ -10,6 +10,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Throwable;
 
 final readonly class JsonOnlyProblemDetailsMiddleware implements MiddlewareInterface
 {
@@ -18,13 +19,13 @@ final readonly class JsonOnlyProblemDetailsMiddleware implements MiddlewareInter
     }
 
     /**
-     * @throws \Throwable
+     * @throws Throwable
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         try {
             return $handler->handle($request);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             if ($e instanceof ProblemDetailsExceptionInterface) {
                 $request = $request->withHeader('Accept', 'application/json');
 

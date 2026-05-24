@@ -22,7 +22,7 @@ readonly class RefreshTokenRepository extends AbstractEloquentRepository
             ?->first();
     }
 
-    public function revokeAllRefreshTokensForUser(int $userId): int
+    public function revokeAllRefreshTokensForUser(string $userId): int
     {
         return $this->createQueryBuilder()
             ->where('user_id', '=', $userId)

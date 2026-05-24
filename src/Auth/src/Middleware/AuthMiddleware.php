@@ -15,8 +15,8 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use System\Exception\NotFoundException;
-use System\Exception\UnauthorizedException;
+use System\Exception\Http\NotFoundException;
+use System\Exception\Http\UnauthorizedException;
 use User\Entity\User;
 use User\Service\UserService;
 
@@ -98,7 +98,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
             ($token = $this->tokenManager->validateAccessToken($accessToken))
             && ($userId = $token->claims()->get('sub'))
         ) {
-            if (!$user = $this->userService->getUserById((int)$userId)) {
+            if (!$user = $this->userService->getUserById((string)$userId)) {
                 // такого быть не должно
                 throw NotFoundException::create('User not found');
             }

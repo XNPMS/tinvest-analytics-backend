@@ -8,7 +8,7 @@ use Auth\DTO\UserCredentials;
 use Laminas\InputFilter\InputFilterInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use System\Enum\SuccessFailureEnum;
-use System\Exception\BadRequestException;
+use System\Exception\Http\BadRequestException;
 use User\Entity\User;
 
 abstract readonly class BaseAuthHandler implements RequestHandlerInterface
@@ -32,7 +32,7 @@ abstract readonly class BaseAuthHandler implements RequestHandlerInterface
         return [
             SuccessFailureEnum::SUCCESS->value => [
                 'email' => $user->getEmail(),
-                'user_id' => $user->getId()
+                'user_id' => $user->getId(),
             ],
         ];
     }
