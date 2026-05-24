@@ -10,5 +10,5 @@ return [
             /** @uses SaveAccountsListener::onAccountsFetched() */
             'method' => 'onAccountsFetched',
         ],
-    ]
+    ],
 ];

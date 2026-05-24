@@ -18,6 +18,7 @@ use Mezzio\Container;
 use Mezzio\Middleware\ErrorResponseGenerator;
 
 return [
+    'debug'        => true,
     'dependencies' => [
         'factories' => [
             ErrorResponseGenerator::class => Container\WhoopsErrorResponseGeneratorFactory::class,

@@ -7,8 +7,8 @@ return [
         'access_token_ttl' => (int)getenv('ACCESS_TTL') ?: 900,
         'refresh_token_ttl' => (int)getenv('REFRESH_TTL') ?: 2592000,
         'jwt' => [
-            'private_key_path' => (string)getenv('JWT_PRIVATE_KEY'),
-            'public_key_path' => (string)getenv('JWT_PUBLIC_KEY'),
+            'private_key' => (string)getenv('JWT_PRIVATE_KEY'),
+            'public_key' => (string)getenv('JWT_PUBLIC_KEY'),
             'issuer' => (string)getenv('JWT_ISS'),
             'audience' => (string)getenv('JWT_AUD'),
         ],

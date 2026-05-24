@@ -9,5 +9,5 @@ return [
         'username' => (string)getenv('RABBITMQ_USER'),
         'password' => (string)getenv('RABBITMQ_PASSWORD'),
         'vhost' => (string)getenv('RABBITMQ_VHOST'),
-    ]
+    ],
 ];

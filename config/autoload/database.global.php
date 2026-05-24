@@ -10,8 +10,8 @@ return [
         'database' => getenv('DATABASE_NAME'),
         'username' => getenv('DATABASE_USERNAME'),
         'password' => getenv('DATABASE_PASSWORD'),
-        'charset' => 'utf8',
-        'collation' => 'utf8_unicode_ci',
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
         'prefix' => '',
     ],
 ];
