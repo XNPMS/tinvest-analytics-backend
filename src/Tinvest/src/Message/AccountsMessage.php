@@ -7,12 +7,12 @@ namespace Tinvest\Message;
 final readonly class AccountsMessage implements MessageInterface
 {
     public function __construct(
-        public int $userId,
+        public string $userId,
         public array $accountIds,
     ) {
     }
 
-    public static function fromArray(array $data): AccountsMessage
+    public static function fromArray(array $data): self
     {
         return new self(
             $data['user_id'],

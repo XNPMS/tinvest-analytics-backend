@@ -15,7 +15,9 @@ class TokenInput extends Input
 {
     private const MAX_LENGTH = 255;
     private const MIN_LENGTH = 20;
-    // без пробелов
+    /**
+     * Без пробелов
+     */
     private const PATTERN = '/^[^\s]+$/';
 
     public function __construct(?string $name = null, bool $isRequired = true)

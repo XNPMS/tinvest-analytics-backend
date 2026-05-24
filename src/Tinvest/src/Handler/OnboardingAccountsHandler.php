@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Tinvest\Handler;
 
-use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\RequestHandlerInterface;
 use System\Enum\SuccessFailureEnum;
-use System\Exception\BadRequestException;
-use System\Exception\NotFoundException;
+use System\Exception\Http\BadRequestException;
+use System\Exception\Http\NotFoundException;
+use System\Handler\AbstractHandler;
 use System\Queue\Enum\Workers;
 use System\Queue\Producer\QueueManager;
 use System\Service\UseInputFilterTrait;
@@ -19,17 +18,15 @@ use Tinvest\Message\AccountsMessage;
 use Tinvest\Repository\TinvestAccountRepository;
 use User\Entity\User;
 use User\Enum\OnboardingStep;
-use User\Service\UserService;
 
-final readonly class OnboardingAccountsHandler implements RequestHandlerInterface
+final class OnboardingAccountsHandler extends AbstractHandler
 {
     use UseInputFilterTrait;
 
     public function __construct(
-        private TinvestAccountIdsInputFilter $inputFilter,
-        private TinvestAccountRepository $repository,
-        private QueueManager $queueManager,
-        private UserService $userService,
+        private readonly TinvestAccountIdsInputFilter $inputFilter,
+        private readonly TinvestAccountRepository $repository,
+        private readonly QueueManager $queueManager,
     ) {
     }
 
@@ -51,19 +48,21 @@ final readonly class OnboardingAccountsHandler implements RequestHandlerInterfac
             throw NotFoundException::create('Accounts not found');
         }
 
-        $jobId = $this->queueManager->send(
-            Workers::SYNC_ONBOARDING_ACCOUNTS,
-            new AccountsMessage(
-                $userId,
-                array_unique($accounts->pluck('account_id')->toArray()),
-            )
-        );
+        // Если синхронизация выполнена, то не даем ее выполнить повторно и не ставим задачу в очередь.
+        // В будущем можно прокидывать дополнительный флаг для принудительной синхры
+//        if ($user->getOnboardingStep() !== OnboardingStep::READY) {
+            $jobId = $this->queueManager->send(
+                Workers::SYNC_ONBOARDING_ACCOUNTS,
+                new AccountsMessage(
+                    $userId,
+                    array_unique($accounts->pluck('account_id')->toArray()),
+                )
+            );
+//        }
 
-        $this->userService->updateOnboardingStep($user, OnboardingStep::SYNCING);
-
-        return new JsonResponse([
+        return $this->jsonResponse([
             SuccessFailureEnum::SUCCESS->value => true,
-            'job_id' => $jobId,
+            'job_id' => $jobId ?? null,
         ]);
     }
 }

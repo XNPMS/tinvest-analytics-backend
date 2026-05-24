@@ -5,34 +5,27 @@ declare(strict_types=1);
 namespace Tinvest\Handler;
 
 use Exception;
-use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\EventManager\EventManager;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\RequestHandlerInterface;
-use System\Exception\BadRequestException;
+use System\Exception\Http\BadRequestException;
+use System\Handler\AbstractHandler;
 use System\Service\UseInputFilterTrait;
-use Tinvest\Entity\TinvestAccount;
 use Tinvest\Event\AccountsFetchedEvent;
 use Tinvest\InputFilter\TinvestTokenInputFilter;
-use Tinvest\Repository\TinvestAccountRepository;
 use Tinvest\Service\BrokerTokenService;
 use Tinvest\Service\TinvestApiService;
 use User\Entity\User;
-use User\Enum\OnboardingStep;
-use User\Service\UserService;
 
-final readonly class OnboardingTokenHandler implements RequestHandlerInterface
+final class OnboardingTokenHandler extends AbstractHandler
 {
     use UseInputFilterTrait;
 
     public function __construct(
-        private TinvestTokenInputFilter $inputFilter,
-        private UserService $userService,
-        private BrokerTokenService $brokerTokenService,
-        private TinvestApiService $apiService,
-        private EventManager $eventManager,
-        private TinvestAccountRepository $accountRepository,
+        private readonly TinvestTokenInputFilter $inputFilter,
+        private readonly BrokerTokenService $brokerTokenService,
+        private readonly TinvestApiService $apiService,
+        private readonly EventManager $eventManager,
     ) {
     }
 
@@ -48,8 +41,7 @@ final readonly class OnboardingTokenHandler implements RequestHandlerInterface
         $token = $this->inputFilter->getValue('token');
 
         try {
-            $this->brokerTokenService->saveToken($user->getId(), $token);
-
+            $this->brokerTokenService->saveToken($user, $token);
             $accounts = $this->apiService->getAllAccountsTinvest($token);
 
             $this->eventManager->triggerEvent(
@@ -58,28 +50,10 @@ final readonly class OnboardingTokenHandler implements RequestHandlerInterface
                     'accounts' => $accounts,
                 ])
             );
-        } catch (Exception $e) {
+        } catch (Exception) {
             throw BadRequestException::create('Check the token and retry the request');
         }
 
-        $this->userService->updateOnboardingStep($user, OnboardingStep::ACCOUNTS_PENDING);
-
-        // Re-fetch from DB to include integer id field
-        $accountIds = array_column($accounts, 'account_id');
-        $dbAccounts = $this->accountRepository->findByIds($accountIds);
-
-        $result = $dbAccounts->map(fn(TinvestAccount $a) => [
-            'id'           => $a->getId(),
-            'account_id'   => $a->getAccountId(),
-            'name'         => $a->getName(),
-            'status'       => (int) $a->getAttribute('status'),
-            'type'         => (int) $a->getAttribute('type'),
-            'opened_date'  => $a->getOpenedDate(),
-            'access_level' => (int) $a->getAttribute('access_level'),
-            'created_at'   => (string) $a->getAttribute('created_at'),
-            'updated_at'   => (string) $a->getAttribute('updated_at'),
-        ])->values()->all();
-
-        return new JsonResponse(['accounts' => $result]);
+        return $this->jsonResponse(['accounts' => $accounts]);
     }
 }
