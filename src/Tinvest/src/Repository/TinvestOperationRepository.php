@@ -123,6 +123,51 @@ readonly class TinvestOperationRepository extends AbstractEloquentRepository
     }
 
     /**
+     * Уникальные тикеры инструментов по набору счетов.
+     *
+     * @param int[] $accountIds
+     * @return string[]
+     */
+    public function findDistinctTickersByAccountIds(array $accountIds): array
+    {
+        if (!$accountIds) {
+            return [];
+        }
+
+        return $this->createQueryBuilder()
+            ->whereIn('account_id', $accountIds)
+            ->whereNotNull('ticker')
+            ->where('ticker', '!=', '')
+            ->distinct()
+            ->pluck('ticker')
+            ->toArray();
+    }
+
+    /**
+     * История дивидендных операций по набору счетов, свежие первыми.
+     *
+     * @param int[] $accountIds
+     */
+    public function findDividendsByAccountIds(array $accountIds, int $limit = 50): Collection
+    {
+        if (!$accountIds) {
+            return new Collection();
+        }
+
+        return $this->createQueryBuilder()
+            ->whereIn('account_id', $accountIds)
+            ->whereIn('operation_type', [
+                OperationType::OPERATION_TYPE_DIVIDEND,
+                OperationType::OPERATION_TYPE_COUPON,
+                OperationType::OPERATION_TYPE_DIVIDEND_TRANSFER,
+            ])
+            ->whereNotNull('payment_rub')
+            ->orderBy('date', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
      * Заполняет payment_rub / commission_rub / fx_rate для операций в указанной валюте.
      * Обрабатывает только строки, где payment_units заполнен, а payment_rub ещё нет.
      */

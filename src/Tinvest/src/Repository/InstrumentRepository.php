@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tinvest\Repository;
 
+use Illuminate\Support\Collection;
 use System\Repository\AbstractEloquentRepository;
 use Tinvest\Entity\Instrument;
+use Tinvest\Entity\TinvestOperation;
 
 readonly class InstrumentRepository extends AbstractEloquentRepository
 {
@@ -76,28 +78,76 @@ readonly class InstrumentRepository extends AbstractEloquentRepository
     /**
      * Возвращает необогащённые инструменты (exchange IS NULL) для операций по указанным счетам.
      * exchange = null означает, что инструмент ещё не проходил GetInstrumentBy.
-     *
-     * @param int[] $accountIds
-     * @return array<array{figi:string,asset_type:string}>
      */
-    public function findUnenrichedByAccountIds(array $accountIds): array
+    public function findUnenrichedByAccountIds(array $accountIds): Collection
     {
         if (!$accountIds) {
-            return [];
+            return new Collection();
         }
 
         return $this->createQueryBuilder()
-            ->select(['instruments.figi', 'instruments.asset_type'])
-            ->join('tinvest_operations', 'tinvest_operations.figi', '=', 'instruments.figi')
-            ->whereIn('tinvest_operations.account_id', $accountIds)
-            ->whereNull('instruments.exchange')
+            ->select([
+                sprintf('%s.figi', Instrument::TABLE),
+                sprintf('%s.asset_type', Instrument::TABLE),
+            ])
+            ->join(
+                TinvestOperation::TABLE,
+                sprintf('%s.figi', TinvestOperation::TABLE),
+                '=',
+                sprintf('%s.figi', Instrument::TABLE)
+            )
+            ->whereIn(sprintf('%s.account_id', TinvestOperation::TABLE), $accountIds)
+            ->whereNull(sprintf('%s.exchange', Instrument::TABLE))
             ->distinct()
+            ->limit(count($accountIds))
             ->get()
             ->map(static fn(Instrument $i) => [
                 'figi' => $i->getFigi(),
                 'asset_type' => $i->getAssetType(),
-            ])
+            ]);
+    }
+
+    /**
+     * @param string[] $tickers
+     * @return int[]
+     */
+    public function findIdsByTickers(array $tickers): array
+    {
+        if (!$tickers) {
+            return [];
+        }
+
+        return $this->createQueryBuilder()
+            ->select(['id'])
+            ->whereIn('ticker', $tickers)
+            ->limit(count($tickers))
+            ->get()
+            ->map(static fn(Instrument $i) => $i->getId())
             ->toArray();
+    }
+
+    /**
+     * @param string[] $tickers
+     * @return array<string, string|null> [ticker => sector]
+     */
+    public function findSectorsByTickers(array $tickers): array
+    {
+        if (!$tickers) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder()
+            ->select(['ticker', 'sector'])
+            ->whereIn('ticker', $tickers)
+            ->limit(count($tickers))
+            ->get();
+
+        $result = [];
+        foreach ($rows as $instrument) {
+            $result[$instrument->getTicker()] = $instrument->getSector();
+        }
+
+        return $result;
     }
 
     public function findDistinctNominalCurrenciesByAccountIds(array $accountIds): array

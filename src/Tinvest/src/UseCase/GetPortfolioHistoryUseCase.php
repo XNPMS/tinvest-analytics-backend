@@ -7,6 +7,9 @@ namespace Tinvest\UseCase;
 use DateTimeImmutable;
 use Exception;
 use Illuminate\Support\Collection;
+use Tinvest\DTO\PortfolioHistory;
+use Tinvest\DTO\PortfolioHistoryPoint;
+use Tinvest\DTO\PortfolioHistorySummary;
 use Tinvest\Entity\PortfolioSnapshot;
 use Tinvest\Entity\TinvestAccount;
 use Tinvest\Exception\EntityNotFountException;
@@ -32,8 +35,8 @@ readonly class GetPortfolioHistoryUseCase
         ?int $brokerAccountId,
         string $to,
         ?string $from,
-        int $period,
-    ): ?array {
+        int $period
+    ): ?PortfolioHistory {
         if ($brokerAccountId !== null) {
             return $this->executeSingleAccount($userId, $brokerAccountId, $to, $from, $period);
         }
@@ -51,7 +54,7 @@ readonly class GetPortfolioHistoryUseCase
         string $to,
         ?string $from,
         int $period,
-    ): ?array {
+    ): ?PortfolioHistory {
         $account = $this->accountRepository->getTinvestAccountByIdAndUserId($brokerAccountId, $userId);
         if ($account === null) {
             throw new EntityNotFountException('Account not found');
@@ -62,7 +65,6 @@ readonly class GetPortfolioHistoryUseCase
         $data = [];
         $this->snapshotRepository->findByAccountIdAndPeriod(
             $account->getId(),
-            $userId,
             $from,
             $to,
             static function (Collection $chunk) use (&$data): void {
@@ -88,7 +90,7 @@ readonly class GetPortfolioHistoryUseCase
     /**
      * @throws Exception
      */
-    private function executeAllAccounts(string $userId, string $to, ?string $from, int $period): ?array
+    private function executeAllAccounts(string $userId, string $to, ?string $from, int $period): ?PortfolioHistory
     {
         $accounts = $this->accountRepository->findSyncedByUserId($userId);
         if ($accounts->isEmpty()) {
@@ -104,14 +106,14 @@ readonly class GetPortfolioHistoryUseCase
             $from,
             $to,
             static function (Collection $chunk) use (&$grouped): void {
-                foreach ($chunk as $s) {
-                    /** @var PortfolioSnapshot $s */
-                    $date = $s->getSnapshotDate();
+                foreach ($chunk as $snapshot) {
+                    /** @var PortfolioSnapshot $snapshot */
+                    $date = $snapshot->getSnapshotDate();
                     if (!isset($grouped[$date])) {
                         $grouped[$date] = ['total_value_rub' => 0.0, 'cash_flow_rub' => 0.0];
                     }
-                    $grouped[$date]['total_value_rub'] += $s->getTotalValueRub();
-                    $grouped[$date]['cash_flow_rub'] += $s->getCashFlowRub();
+                    $grouped[$date]['total_value_rub'] += $snapshot->getTotalValueRub();
+                    $grouped[$date]['cash_flow_rub'] += $snapshot->getCashFlowRub();
                 }
             }
         );
@@ -122,19 +124,20 @@ readonly class GetPortfolioHistoryUseCase
 
         ksort($grouped);
 
-        // TWR для агрегированного мультисчётного портфеля не вычисляется пословно:
-        // снэпшоты разных счетов на одну дату имеют разные twr_factor.
-        // Используем нейтральный множитель - итоговый TWR будет 0%.
-        $data = array_map(
-            static fn(string $date, array $row) => [
+        $data = [];
+        $prevValue = 0.0;
+        foreach ($grouped as $date => $row) {
+            $totalValue = (float)$row['total_value_rub'];
+            $cashFlow = (float)$row['cash_flow_rub'];
+            $twrFactor = PortfolioMath::twrFactor($prevValue, $totalValue, $cashFlow);
+            $data[] = [
                 'date' => $date,
-                'total_value_rub' => $row['total_value_rub'],
-                'cash_flow_rub' => $row['cash_flow_rub'],
-                'twr_factor' => PortfolioMath::NEUTRAL_TWR_FACTOR,
-            ],
-            array_keys($grouped),
-            array_values($grouped),
-        );
+                'total_value_rub' => $totalValue,
+                'cash_flow_rub' => $cashFlow,
+                'twr_factor' => $twrFactor,
+            ];
+            $prevValue = $totalValue;
+        }
 
         return $this->buildResult($data);
     }
@@ -174,7 +177,7 @@ readonly class GetPortfolioHistoryUseCase
         return (new DateTimeImmutable($earliest))->format(CurrencyRateService::DATE_FORMAT);
     }
 
-    private function buildResult(array $data): array
+    private function buildResult(array $data): PortfolioHistory
     {
         $periodTwr = array_reduce(
             $data,
@@ -185,13 +188,23 @@ readonly class GetPortfolioHistoryUseCase
         $first = reset($data);
         $last = $data[count($data) - 1] ?? null;
 
-        return [
-            'data' => $data,
-            'summary' => [
-                'twr_percent' => round(($periodTwr - PortfolioMath::NEUTRAL_TWR_FACTOR) * 100, 2),
-                'first_value' => $first !== false ? $first['total_value_rub'] : PortfolioMath::ZERO,
-                'last_value' => $last !== null ? $last['total_value_rub'] : PortfolioMath::ZERO,
-            ],
-        ];
+        $points = array_map(
+            static fn(array $d) => new PortfolioHistoryPoint(
+                $d['date'],
+                $d['total_value_rub'],
+                $d['cash_flow_rub'],
+                $d['twr_factor'],
+            ),
+            $data,
+        );
+
+        return new PortfolioHistory(
+            $points,
+            new PortfolioHistorySummary(
+                round(($periodTwr - PortfolioMath::NEUTRAL_TWR_FACTOR) * 100, 2),
+                $first !== false ? $first['total_value_rub'] : PortfolioMath::ZERO,
+                $last !== null ? $last['total_value_rub'] : PortfolioMath::ZERO,
+            ),
+        );
     }
 }

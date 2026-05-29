@@ -103,20 +103,14 @@ readonly class PortfolioSnapshotRepository extends AbstractEloquentRepository
     /**
      * @throws InvalidArgumentRepositoryException
      */
-    public function findByAccountIdAndPeriod(
-        int $brokerAccountId,
-        string $userId,
-        string $from,
-        string $to,
-        callable $callback,
-    ): void {
+    public function findByAccountIdAndPeriod(int $brokerAccountId, string $from, string $to, callable $callback): void
+    {
         if ($brokerAccountId < 0) {
             throw InvalidArgumentRepositoryException::invalidBrokerAccountId($brokerAccountId);
         }
 
         $this->createQueryBuilder()
             ->where('account_id', '=', $brokerAccountId)
-            ->where('user_id', '=', $userId)
             ->whereBetween('snapshot_date', [$from, $to])
             ->orderBy('snapshot_date', 'asc')
             ->chunkById(self::MAX_LIMIT, $callback);
@@ -135,7 +129,6 @@ readonly class PortfolioSnapshotRepository extends AbstractEloquentRepository
         $this->createQueryBuilder()
             ->whereIn('account_id', $accountIds)
             ->whereBetween('snapshot_date', [$from, $to])
-            ->orderBy('snapshot_date', 'asc')
             ->chunkById(self::MAX_LIMIT, $callback);
     }
 

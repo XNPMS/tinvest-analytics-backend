@@ -41,11 +41,11 @@ readonly class InstrumentService
             $ticker = $operation->ticker;
 
             $instruments[$figi] = new Instrument(
-                figi: $figi,
-                name: $ticker ?: $figi,
-                assetType: AssetType::fromTinkoff($instrumentType),
-                currency: $currency,
-                ticker: $ticker,
+                $figi,
+                $ticker ?: $figi,
+                AssetType::fromTinkoff($instrumentType),
+                $currency,
+                $ticker,
             );
         }
 

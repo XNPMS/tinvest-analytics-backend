@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Tinvest\UseCase;
 
+use Tinvest\DTO\AssetAllocation;
+use Tinvest\DTO\AssetAllocationBreakdownItem;
+use Tinvest\DTO\AssetAllocationItem;
 use Tinvest\Entity\TinvestAccount;
+use Tinvest\Repository\InstrumentRepository;
 use Tinvest\Repository\PortfolioSnapshotRepository;
 use Tinvest\Repository\TinvestAccountRepository;
 use Tinvest\Service\CurrencyRateService;
@@ -15,13 +19,11 @@ readonly class GetAssetAllocationUseCase
         private TinvestAccountRepository $accountRepository,
         private PortfolioSnapshotRepository $snapshotRepository,
         private CurrencyRateService $currencyRateService,
+        private InstrumentRepository $instrumentRepository,
     ) {
     }
 
-    /**
-     * @throws \JsonException
-     */
-    public function execute(string $userId, array $accountIds): ?array
+    public function execute(string $userId, array $accountIds): ?AssetAllocation
     {
         if (empty($accountIds)) {
             $accounts = $this->accountRepository->findSyncedByUserId($userId);
@@ -29,12 +31,11 @@ readonly class GetAssetAllocationUseCase
                 return null;
             }
 
-            $accountIds = array_map(static fn(TinvestAccount $a) => $a->getId(), $accounts->all());
+            $accountIds = array_map(static fn(TinvestAccount $account) => $account->getId(), $accounts->all());
         }
 
         $allPositions = [];
         $foreignCurrencies = [];
-
         foreach ($accountIds as $accountId) {
             $snapshot = $this->snapshotRepository->findLatestByAccountId($accountId);
             if ($snapshot === null) {
@@ -65,6 +66,7 @@ readonly class GetAssetAllocationUseCase
                 $aggregated[$position->ticker] = [
                     'ticker' => $position->ticker,
                     'instrument_type' => $position->instrumentType,
+                    'currency' => $position->currentPriceCurrency,
                     'value_rub' => 0.0,
                 ];
             }
@@ -80,19 +82,68 @@ readonly class GetAssetAllocationUseCase
                 ? round($item['value_rub'] / $totalValueRub * 100, 2)
                 : 0.0;
 
-            $items[] = [
-                'ticker' => $item['ticker'],
-                'instrument_type' => $item['instrument_type'],
-                'value_rub' => round($item['value_rub'], 2),
-                'percent' => $percent,
-            ];
+            $items[] = new AssetAllocationItem(
+                $item['ticker'],
+                $item['instrument_type'],
+                round($item['value_rub'], 2),
+                $percent,
+            );
         }
 
-        usort($items, static fn(array $a, array $b) => $b['value_rub'] <=> $a['value_rub']);
+        usort($items, static fn(AssetAllocationItem $a, AssetAllocationItem $b) => $b->valueRub <=> $a->valueRub);
 
-        return [
-            'total_value_rub' => round($totalValueRub, 2),
-            'items' => $items,
-        ];
+        $sectors = $this->instrumentRepository->findSectorsByTickers(array_keys($aggregated));
+
+        $byType = [];
+        $byCurrency = [];
+        $bySector = [];
+
+        foreach ($aggregated as $ticker => $item) {
+            $valueRub = $item['value_rub'];
+
+            $type = $item['instrument_type'];
+            $byType[$type] = ($byType[$type] ?? 0.0) + $valueRub;
+
+            $currency = $item['currency'];
+            $byCurrency[$currency] = ($byCurrency[$currency] ?? 0.0) + $valueRub;
+
+            $sector = $sectors[$ticker] ?? null;
+            if ($sector !== null) {
+                $bySector[$sector] = ($bySector[$sector] ?? 0.0) + $valueRub;
+            }
+        }
+
+        return new AssetAllocation(
+            round($totalValueRub, 2),
+            $items,
+            $this->buildBreakdown($byType, $totalValueRub),
+            $this->buildBreakdown($byCurrency, $totalValueRub),
+            $this->buildBreakdown($bySector, $totalValueRub),
+        );
+    }
+
+    /**
+     * @param array<string, float> $grouped
+     * @return AssetAllocationBreakdownItem[]
+     */
+    private function buildBreakdown(array $grouped, float $totalValueRub): array
+    {
+        $result = [];
+        foreach ($grouped as $key => $valueRub) {
+            $result[] = new AssetAllocationBreakdownItem(
+                $key,
+                round($valueRub, 2),
+                $totalValueRub > 0.0 ? round($valueRub / $totalValueRub * 100, 2) : 0.0,
+            );
+        }
+        usort(
+            $result,
+            static fn(
+                AssetAllocationBreakdownItem $a,
+                AssetAllocationBreakdownItem $b,
+            ) => $b->valueRub <=> $a->valueRub,
+        );
+
+        return $result;
     }
 }

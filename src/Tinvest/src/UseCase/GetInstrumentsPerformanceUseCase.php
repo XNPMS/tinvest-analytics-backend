@@ -7,6 +7,7 @@ namespace Tinvest\UseCase;
 use Illuminate\Support\Collection;
 use JsonException;
 use Tinvest\Collection\OperationsCollection;
+use Tinvest\DTO\InstrumentPerformance;
 use Tinvest\Entity\TinvestAccount;
 use Tinvest\Entity\TinvestOperation;
 use Tinvest\Helper\FifoLedger;
@@ -29,7 +30,7 @@ readonly class GetInstrumentsPerformanceUseCase
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * @return InstrumentPerformance[]
      */
     public function execute(User $user, bool $openOnly): array
     {
@@ -84,7 +85,27 @@ readonly class GetInstrumentsPerformanceUseCase
 
         $this->finalizeAnnualizedReturn($instruments);
 
-        return array_values($instruments);
+        return array_values(array_map(
+            static fn(array $i) => new InstrumentPerformance(
+                ticker: $i['ticker'],
+                name: $i['name'],
+                figi: $i['figi'],
+                instrumentType: $i['instrument_type'],
+                isOpen: $i['is_open'],
+                quantity: $i['quantity'],
+                avgPriceRub: $i['avg_price_rub'],
+                currentPriceRub: $i['current_price_rub'],
+                realizedPnlRub: $i['realized_pnl_rub'],
+                realizedPnlPercent: $i['realized_pnl_percent'],
+                unrealizedPnlRub: $i['unrealized_pnl_rub'],
+                totalPnlRub: $i['total_pnl_rub'],
+                totalPnlPercent: $i['total_pnl_percent'],
+                annualizedPnlPercent: $i['annualized_pnl_percent'],
+                todayPnlRub: $i['today_pnl_rub'],
+                todayPnlPercent: $i['today_pnl_percent'],
+            ),
+            $instruments,
+        ));
     }
 
     /**

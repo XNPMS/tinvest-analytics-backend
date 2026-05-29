@@ -7,6 +7,7 @@ namespace Tinvest\Handler;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use System\Handler\AbstractHandler;
+use Tinvest\Model\Api\InstrumentsPerformanceApiResponse;
 use Tinvest\UseCase\GetInstrumentsPerformanceUseCase;
 use User\Entity\User;
 
@@ -27,6 +28,6 @@ final class InstrumentsPerformanceHandler extends AbstractHandler
             return $this->noContent();
         }
 
-        return $this->jsonResponse(['instruments' => $result]);
+        return $this->jsonResponse(InstrumentsPerformanceApiResponse::fromInstrumentsList($result)->toApi());
     }
 }

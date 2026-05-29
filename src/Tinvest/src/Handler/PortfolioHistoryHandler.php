@@ -13,6 +13,7 @@ use System\Service\UseInputFilterTrait;
 use Tinvest\Exception\EntityNotFountException;
 use Tinvest\InputFilter\PortfolioHistoryInputFilter;
 use Tinvest\Service\CurrencyRateService;
+use Tinvest\Model\Api\PortfolioHistoryApiResponse;
 use Tinvest\UseCase\GetPortfolioHistoryUseCase;
 use User\Entity\User;
 
@@ -54,6 +55,6 @@ final class PortfolioHistoryHandler extends AbstractHandler
             return $this->noContent();
         }
 
-        return $this->jsonResponse($result);
+        return $this->jsonResponse(PortfolioHistoryApiResponse::fromPortfolioHistory($result)->toApi());
     }
 }

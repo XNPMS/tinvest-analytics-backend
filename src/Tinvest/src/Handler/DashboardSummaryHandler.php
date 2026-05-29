@@ -7,6 +7,7 @@ namespace Tinvest\Handler;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use System\Handler\AbstractHandler;
+use Tinvest\Model\Api\DashboardSummaryApiResponse;
 use Tinvest\UseCase\GetDashboardSummaryUseCase;
 use User\Entity\User;
 
@@ -27,6 +28,6 @@ final class DashboardSummaryHandler extends AbstractHandler
             return $this->noContent();
         }
 
-        return $this->jsonResponse($dashboardSummary->toArray());
+        return $this->jsonResponse(DashboardSummaryApiResponse::fromDashboardSummary($dashboardSummary)->toApi());
     }
 }
