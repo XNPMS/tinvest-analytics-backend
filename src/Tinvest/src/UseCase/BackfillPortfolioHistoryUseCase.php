@@ -15,6 +15,7 @@ use Tinvest\Helper\PortfolioMath;
 use Tinvest\Repository\InstrumentRepository;
 use Tinvest\Repository\PortfolioSnapshotRepository;
 use Tinvest\Repository\TinvestOperationRepository;
+use Tinvest\Exception\TinvestGrpcException;
 use Tinvest\Repository\TinvestSplitRepository;
 use Tinvest\Service\CurrencyRateService;
 use Tinvest\Service\TinvestApiService;
@@ -61,6 +62,7 @@ readonly class BackfillPortfolioHistoryUseCase
      *
      * @throws Exception
      * @throws JsonException
+     * @throws \Throwable
      */
     public function execute(TinvestAccount $account, string $token, ?callable $onProgress = null): void
     {
@@ -116,7 +118,23 @@ readonly class BackfillPortfolioHistoryUseCase
         foreach ($instruments as $ticker => $meta) {
             $instrumentType = $meta['type'];
             $instrumentId = empty($meta['figi']) ? $ticker : $meta['figi'];
-            $candles = $this->apiService->getHistoricalCandles($token, $instrumentId, $openedDate, $yesterday);
+
+            try {
+                $candles = $this->apiService->getHistoricalCandles($token, $instrumentId, $openedDate, $yesterday);
+            } catch (TinvestGrpcException $e) {
+                if ($e->getGrpcCode() === TinvestGrpcException::GRPC_NOT_FOUND) {
+                    $this->logger->warning('Instrument not found in API, skipping candles', [
+                        'ticker' => $ticker,
+                        'instrument_id' => $instrumentId,
+                    ]);
+                    $fetchedInstruments++;
+                    if ($onProgress !== null && $totalInstruments > 0) {
+                        $onProgress($fetchedInstruments, $totalInstruments);
+                    }
+                    continue;
+                }
+                throw $e;
+            }
 
             if ($instrumentType === 'bond') {
                 $nominal = $instrumentData[$ticker]['nominal'] ?? null;
@@ -185,7 +203,7 @@ readonly class BackfillPortfolioHistoryUseCase
                 $type = (int)$op->getOperationType();
                 $ticker = $op->getTicker();
                 // GetOperationsByCursor возвращает quantity в штуках (units), не в лотах
-                $qty = $op->getQuantity() - $op->getQuantityRest();
+                $qty = $op->getActualQuantity();
                 $paymentRub = (float)($op->getPaymentRub() ?? 0);
                 $commissionRub = $op->getCommissionRub();
 
@@ -241,6 +259,7 @@ readonly class BackfillPortfolioHistoryUseCase
                 $avgPrice = $avgPrices[$ticker] ?? 0.0;
                 $positionsJson[] = [
                     'ticker' => $ticker,
+                    'name' => $ticker,
                     'instrument_type' => $instruments[$ticker]['type'],
                     'quantity' => $qty,
                     'current_price' => $price,

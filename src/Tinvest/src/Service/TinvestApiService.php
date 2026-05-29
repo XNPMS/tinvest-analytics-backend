@@ -10,6 +10,8 @@ use Google\Protobuf\Timestamp;
 use JsonException;
 use Metaseller\TinkoffInvestApi2\TinkoffClientsFactory;
 use stdClass;
+use System\Helper\RetryHelper;
+use Throwable;
 use Tinkoff\Invest\V1\Account;
 use Tinkoff\Invest\V1\AccountStatus;
 use Tinkoff\Invest\V1\CandleInterval;
@@ -39,9 +41,13 @@ readonly class TinvestApiService
 {
     private const MAX_LIMIT_OPERATIONS = 1_000;
     private const NANO_DIVISOR = 1_000_000_000;
+    private const GRPC_MAX_ATTEMPTS = 3;
+    private const GRPC_RETRY_DELAY_SECONDS = 5;
 
-    // Диспатч по asset_type: [метод клиента, есть ли getSector() в ответе]
-    // Все типы используют одинаковый InstrumentRequest и возвращают $response->getInstrument()
+    /**
+     * Диспатч по asset_type: [метод клиента, есть ли getSector() в ответе]
+     * Все типы используют одинаковый InstrumentRequest и возвращают $response->getInstrument()
+     */
     private const INSTRUMENT_FETCH_CONFIG = [
         'stock' => ['ShareBy', true],
         'bond' => ['BondBy', true],
@@ -52,8 +58,10 @@ readonly class TinvestApiService
         // other → GetInstrumentBy (generic, без сектора)
     ];
 
-    // Maps ISO-код валюты → идентификатор инструмента для GetLastPrices (формат ticker_CLASSCODE)
-    // CETS - секция валютного рынка Московской биржи
+    /**
+     * Maps ISO-код валюты → идентификатор инструмента для GetLastPrices (формат ticker_CLASSCODE)
+     * CETS - секция валютного рынка Московской биржи
+     */
     private const CURRENCY_INSTRUMENT_IDS = [
         'usd' => 'USD000UTSTOM_CETS',
         'eur' => 'EUR_RUB__TOM_CETS',
@@ -74,16 +82,20 @@ readonly class TinvestApiService
      *
      * @throws TinvestGrpcException
      * @throws JsonException
+     * @throws Throwable
      */
     public function getAllAccountsTinvest(string $token): array
     {
         $accounts = [];
         /** @var GetAccountsResponse $response */
-        [$response, $status] = $this->getApiClient($token)->usersServiceClient
-            ->GetAccounts((new GetAccountsRequest())->setStatus(AccountStatus::ACCOUNT_STATUS_ALL))
-            ->wait();
+        [$response] = $this->grpcCall(function () use ($token): array {
+            [$response, $status] = $this->getApiClient($token)->usersServiceClient
+                ->GetAccounts((new GetAccountsRequest())->setStatus(AccountStatus::ACCOUNT_STATUS_ALL))
+                ->wait();
+            $this->handleGrpcError($status);
 
-        $this->handleGrpcError($status);
+            return [$response];
+        });
         /** @var Account $account */
         foreach ($response->getAccounts() as $account) {
             $accounts[] = [
@@ -108,6 +120,7 @@ readonly class TinvestApiService
      * @throws TinvestGrpcException
      * @throws JsonException
      * @throws Exception
+     * @throws Throwable
      */
     public function countOperations(string $token, TinvestAccount $tinvestAccount): int
     {
@@ -115,26 +128,10 @@ readonly class TinvestApiService
         $rateLimiter = new RateLimiter(LimitTokens::MAX_TOKENS_SERVICE_OPERATIONS);
 
         $total = 0;
-        $hasNext = true;
         $cursor = '';
-
+        $hasNext = true;
         while ($hasNext) {
-            $rateLimiter->consume();
-
-            /** @var GetOperationsByCursorResponse $response */
-            [$response, $status] = $apiClient->operationsServiceClient
-                ->GetOperationsByCursor(
-                    (new GetOperationsByCursorRequest())
-                        ->setCursor($cursor)
-                        ->setLimit(self::MAX_LIMIT_OPERATIONS)
-                        ->setAccountId($tinvestAccount->getAccountId())
-                        ->setFrom($this->createTimestamp($tinvestAccount->getOpenedDate()))
-                        ->setTo($this->createTimestamp())
-                        ->setState(OperationState::OPERATION_STATE_EXECUTED)
-                )
-                ->wait();
-
-            $this->handleGrpcError($status);
+            $response = $this->getOperationsByCursorResponse($apiClient, $cursor, $tinvestAccount, $rateLimiter);
 
             $total += count($response->getItems());
             $hasNext = $response->getHasNext();
@@ -148,6 +145,7 @@ readonly class TinvestApiService
      * @throws TinvestGrpcException
      * @throws JsonException
      * @throws Exception
+     * @throws Throwable
      */
     public function streamOperations(
         string $token,
@@ -159,25 +157,10 @@ readonly class TinvestApiService
         $apiClient = $this->getApiClient($token);
         $rateLimiter = new RateLimiter(LimitTokens::MAX_TOKENS_SERVICE_OPERATIONS);
 
-        $hasNext = true;
         $batch = [];
-
+        $hasNext = true;
         while ($hasNext) {
-            $rateLimiter->consume();
-            /** @var GetOperationsByCursorResponse $response */
-            [$response, $status] = $apiClient->operationsServiceClient
-                ->GetOperationsByCursor(
-                    (new GetOperationsByCursorRequest())
-                        ->setCursor($cursor)
-                        ->setLimit(self::MAX_LIMIT_OPERATIONS)
-                        ->setAccountId($tinvestAccount->getAccountId())
-                        ->setFrom($this->createTimestamp($tinvestAccount->getOpenedDate()))
-                        ->setTo($this->createTimestamp())
-                        ->setState(OperationState::OPERATION_STATE_EXECUTED)
-                )
-                ->wait();
-
-            $this->handleGrpcError($status);
+            $response = $this->getOperationsByCursorResponse($apiClient, $cursor, $tinvestAccount, $rateLimiter);
             /** @var OperationItem $operation */
             foreach ($response->getItems() as $operation) {
                 $commissionValue = $operation->getCommission();
@@ -240,20 +223,24 @@ readonly class TinvestApiService
      * @return array{figi:string,name:string|null,ticker:string|null,isin:string|null,sector:string|null,exchange:string,lot_size:int,nominal:float|null}|null
      * @throws JsonException
      * @throws TinvestGrpcException
+     * @throws Throwable
      */
     public function getInstrumentDetails(string $token, string $figi, string $assetType): ?array
     {
         [$method, $hasSector] = self::INSTRUMENT_FETCH_CONFIG[$assetType] ?? ['GetInstrumentBy', false];
 
-        [$response, $status] = $this->getApiClient($token)->instrumentsServiceClient
-            ->$method(
-                (new InstrumentRequest())
-                ->setIdType(InstrumentIdType::INSTRUMENT_ID_TYPE_FIGI)
-                ->setId($figi)
-            )
-            ->wait();
+        [$response] = $this->grpcCall(function () use ($token, $method, $figi): array {
+            [$response, $status] = $this->getApiClient($token)->instrumentsServiceClient
+                ->$method(
+                    (new InstrumentRequest())
+                    ->setIdType(InstrumentIdType::INSTRUMENT_ID_TYPE_FIGI)
+                    ->setId($figi)
+                )
+                ->wait();
+            $this->handleGrpcError($status);
 
-        $this->handleGrpcError($status);
+            return [$response];
+        });
 
         $instrument = $response->getInstrument();
         if ($instrument === null) {
@@ -297,12 +284,12 @@ readonly class TinvestApiService
      * @return array<string, float> [currency => rate_to_rub]
      * @throws TinvestGrpcException
      * @throws JsonException
+     * @throws Throwable
      */
     public function getCurrencyRatesToRub(string $token, array $currencies): array
     {
         $instrumentIds = [];
         $instrumentIdToCurrency = [];
-
         foreach ($currencies as $currency) {
             $currency = strtolower($currency);
             $instrumentId = self::CURRENCY_INSTRUMENT_IDS[$currency] ?? null;
@@ -319,11 +306,14 @@ readonly class TinvestApiService
         }
 
         /** @var GetLastPricesResponse $response */
-        [$response, $status] = $this->getApiClient($token)->marketDataServiceClient
-            ->GetLastPrices((new GetLastPricesRequest())->setInstrumentId($instrumentIds))
-            ->wait();
+        [$response] = $this->grpcCall(function () use ($token, $instrumentIds): array {
+            [$response, $status] = $this->getApiClient($token)->marketDataServiceClient
+                ->GetLastPrices((new GetLastPricesRequest())->setInstrumentId($instrumentIds))
+                ->wait();
+            $this->handleGrpcError($status);
 
-        $this->handleGrpcError($status);
+            return [$response];
+        });
 
         $rates = [];
         /** @var LastPrice $lastPrice */
@@ -348,6 +338,7 @@ readonly class TinvestApiService
      * @return array<string, float> [ticker_classCode => last_price]
      * @throws TinvestGrpcException
      * @throws JsonException
+     * @throws Throwable
      */
     public function getLastPricesByInstrumentIds(string $token, array $instrumentIds): array
     {
@@ -356,11 +347,14 @@ readonly class TinvestApiService
         }
 
         /** @var GetLastPricesResponse $response */
-        [$response, $status] = $this->getApiClient($token)->marketDataServiceClient
-            ->GetLastPrices((new GetLastPricesRequest())->setInstrumentId($instrumentIds))
-            ->wait();
+        [$response] = $this->grpcCall(function () use ($token, $instrumentIds): array {
+            [$response, $status] = $this->getApiClient($token)->marketDataServiceClient
+                ->GetLastPrices((new GetLastPricesRequest())->setInstrumentId($instrumentIds))
+                ->wait();
+            $this->handleGrpcError($status);
 
-        $this->handleGrpcError($status);
+            return [$response];
+        });
 
         $prices = [];
         /** @var LastPrice $lastPrice */
@@ -381,6 +375,7 @@ readonly class TinvestApiService
      *
      * @return array<string, float> [Y-m-d => close_price]
      * @throws Exception
+     * @throws Throwable
      */
     public function getHistoricalCandles(string $token, string $instrumentId, string $from, string $to): array
     {
@@ -391,40 +386,23 @@ readonly class TinvestApiService
         $fromDt = new DateTimeImmutable($from);
         $toDt = new DateTimeImmutable($to);
         $chunkFrom = $fromDt;
-
         while ($chunkFrom <= $toDt) {
             $chunkTo = $chunkFrom->modify('+1 year');
             if ($chunkTo > $toDt) {
                 $chunkTo = $toDt;
             }
 
-            $rateLimiter->consume();
-
-            /** @var GetCandlesResponse $response */
-            [$response, $status] = $apiClient->marketDataServiceClient
-                ->GetCandles(
-                    (new GetCandlesRequest())
-                        ->setInstrumentId($instrumentId)
-                        ->setFrom($this->createTimestamp($chunkFrom->format(CurrencyRateService::DATE_FORMAT)))
-                        ->setTo($this->createTimestamp(
-                            $chunkTo->modify('+1 day')->format(CurrencyRateService::DATE_FORMAT)
-                        ))
-                        ->setInterval(CandleInterval::CANDLE_INTERVAL_DAY)
-                )
-                ->wait();
-
-            // Rate limit - ждём сброса и повторяем тот же чанк
-            if (($status->code ?? null) === 8) {
-                $resetSeconds = (int)($status->metadata['x-ratelimit-reset'][0] ?? 30) + 2;
-                sleep($resetSeconds);
-                continue;
-            }
-
-            $this->handleGrpcError($status);
-
-            if ($response === null) {
-                break;
-            }
+            $response = $this->getCandlesChunk(
+                $apiClient,
+                (new GetCandlesRequest())
+                    ->setInstrumentId($instrumentId)
+                    ->setFrom($this->createTimestamp($chunkFrom->format(CurrencyRateService::DATE_FORMAT)))
+                    ->setTo($this->createTimestamp(
+                        $chunkTo->modify('+1 day')->format(CurrencyRateService::DATE_FORMAT)
+                    ))
+                    ->setInterval(CandleInterval::CANDLE_INTERVAL_DAY),
+                $rateLimiter,
+            );
 
             /** @var HistoricCandle $candle */
             foreach ($response->getCandles() as $candle) {
@@ -433,6 +411,7 @@ readonly class TinvestApiService
                 if ($close === null || $time === null) {
                     continue;
                 }
+
                 $date = date(CurrencyRateService::DATE_FORMAT, $time->getSeconds());
                 $result[$date] = $close->getUnits() + $close->getNano() / self::NANO_DIVISOR;
             }
@@ -462,15 +441,19 @@ readonly class TinvestApiService
     /**
      * @throws TinvestGrpcException
      * @throws JsonException
+     * @throws Throwable
      */
     public function getPortfolio(string $token, string $accountId): array
     {
         /** @var PortfolioResponse $response */
-        [$response, $status] = $this->getApiClient($token)->operationsServiceClient
-            ->GetPortfolio((new PortfolioRequest())->setAccountId($accountId))
-            ->wait();
+        [$response] = $this->grpcCall(function () use ($token, $accountId): array {
+            [$response, $status] = $this->getApiClient($token)->operationsServiceClient
+                ->GetPortfolio((new PortfolioRequest())->setAccountId($accountId))
+                ->wait();
+            $this->handleGrpcError($status);
 
-        $this->handleGrpcError($status);
+            return [$response];
+        });
 
         $positions = [];
         $expectedYieldRub = 0.0;
@@ -519,10 +502,54 @@ readonly class TinvestApiService
     /**
      * @throws TinvestGrpcException
      * @throws JsonException
+     * @throws Throwable
+     */
+    private function getCandlesChunk(
+        TinkoffClientsFactory $apiClient,
+        GetCandlesRequest $request,
+        RateLimiter $rateLimiter,
+    ): GetCandlesResponse {
+        [$response] = $this->grpcCall(function () use ($apiClient, $request, $rateLimiter): array {
+            $rateLimiter->consume();
+            /** @var GetCandlesResponse $response */
+            [$response, $status] = $apiClient->marketDataServiceClient
+                ->GetCandles($request)
+                ->wait();
+            $this->handleGrpcError($status);
+
+            return [$response];
+        });
+
+        return $response;
+    }
+
+    /**
+     * @throws TinvestGrpcException
+     * @throws JsonException
+     * @throws Throwable
+     */
+    private function grpcCall(callable $fn): array
+    {
+        return RetryHelper::withRetry(
+            $fn,
+            self::GRPC_MAX_ATTEMPTS,
+            self::GRPC_RETRY_DELAY_SECONDS,
+            static fn(\Throwable $e) => !($e instanceof TinvestGrpcException && $e->getGrpcCode() === TinvestGrpcException::GRPC_NOT_FOUND),
+        );
+    }
+
+    /**
+     * @throws TinvestGrpcException
+     * @throws JsonException
      */
     private function handleGrpcError(stdClass $status): void
     {
         if (($status->code ?? null) !== 0) {
+            if (($status->code ?? null) === 8) {
+                $resetSeconds = (int)($status->metadata['x-ratelimit-reset'][0] ?? 30) + 2;
+                sleep($resetSeconds);
+            }
+
             throw new TinvestGrpcException(
                 sprintf(
                     '[%s] Tinvest gRPC error: code=%s details=%s metadata=%s',
@@ -530,7 +557,8 @@ readonly class TinvestApiService
                     $status->code ?? 'unknown',
                     $status->details ?? '',
                     json_encode($status->metadata ?? [], JSON_THROW_ON_ERROR)
-                )
+                ),
+                (int)($status->code ?? 0),
             );
         }
     }
@@ -541,5 +569,37 @@ readonly class TinvestApiService
     private function createTimestamp(string $dateTime = 'now'): Timestamp
     {
         return (new Timestamp())->setSeconds((new DateTimeImmutable($dateTime))->getTimestamp());
+    }
+
+    /**
+     * @throws TinvestGrpcException
+     * @throws Throwable
+     * @throws JsonException
+     */
+    public function getOperationsByCursorResponse(
+        TinkoffClientsFactory $apiClient,
+        string $cursor,
+        TinvestAccount $tinvestAccount,
+        RateLimiter $rateLimiter
+    ): GetOperationsByCursorResponse {
+        [$response] = $this->grpcCall(function () use ($apiClient, $cursor, $tinvestAccount, $rateLimiter): array {
+            $rateLimiter->consume();
+            [$response, $status] = $apiClient->operationsServiceClient
+                ->GetOperationsByCursor(
+                    (new GetOperationsByCursorRequest())
+                        ->setCursor($cursor)
+                        ->setLimit(self::MAX_LIMIT_OPERATIONS)
+                        ->setAccountId($tinvestAccount->getAccountId())
+                        ->setFrom($this->createTimestamp($tinvestAccount->getOpenedDate()))
+                        ->setTo($this->createTimestamp())
+                        ->setState(OperationState::OPERATION_STATE_EXECUTED)
+                )
+                ->wait();
+            $this->handleGrpcError($status);
+
+            return [$response];
+        });
+
+        return $response;
     }
 }
