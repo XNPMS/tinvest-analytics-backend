@@ -9,6 +9,7 @@ use System\Factory\InputFilterAbstractFactory;
 use Tinvest\Factory\BrokerTokenServiceFactory;
 use Tinvest\Handler\AssetAllocationHandler;
 use Tinvest\Handler\DashboardSummaryHandler;
+use Tinvest\Handler\DividendCalendarHandler;
 use Tinvest\Handler\InstrumentsPerformanceHandler;
 use Tinvest\Handler\OnboardingAccountsHandler;
 use Tinvest\Handler\OnboardingTokenHandler;
@@ -57,6 +58,7 @@ class ConfigProvider
         return [
             AssetAllocationHandler::class => [HandlerDelegatorFactory::class],
             DashboardSummaryHandler::class => [HandlerDelegatorFactory::class],
+            DividendCalendarHandler::class => [HandlerDelegatorFactory::class],
             OnboardingAccountsHandler::class => [HandlerDelegatorFactory::class],
             OnboardingTokenHandler::class => [HandlerDelegatorFactory::class],
             InstrumentsPerformanceHandler::class => [HandlerDelegatorFactory::class],

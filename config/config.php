@@ -18,8 +18,11 @@ $aggregator = new ConfigAggregator([
     \Laminas\Filter\ConfigProvider::class,
     \Laminas\Cache\ConfigProvider::class,
     \Laminas\Cache\Storage\Adapter\Memcached\ConfigProvider::class,
-    \Mezzio\Twig\ConfigProvider::class,
-    \Mezzio\Tooling\ConfigProvider::class,
+    class_exists(\Mezzio\Tooling\ConfigProvider::class)
+        ? \Mezzio\Tooling\ConfigProvider::class
+        : function (): array {
+            return [];
+        },
     \Mezzio\Router\LaminasRouter\ConfigProvider::class,
     \Laminas\Router\ConfigProvider::class,
     \Laminas\HttpHandlerRunner\ConfigProvider::class,

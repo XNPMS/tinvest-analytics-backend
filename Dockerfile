@@ -34,7 +34,7 @@ RUN apk add --no-cache --virtual .build-deps \
     mysql-dev \
     && pecl install memcached \
     && docker-php-ext-enable memcached \
-    && docker-php-ext-install pdo pdo_mysql sockets \
+    && docker-php-ext-install pdo pdo_mysql sockets bcmath \
     && apk del .build-deps
 
 RUN mkdir -p /usr/local/lib/php/extensions/no-debug-non-zts-20220829 && \
@@ -47,9 +47,10 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 COPY composer.json composer.lock ./
 
-# RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --ignore-platform-reqs
+#RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts
 
 COPY . .
+#RUN rm -f config/autoload/development.local.php
 COPY crontab /etc/crontabs/root
 
 RUN chmod 0644 /etc/crontabs/root

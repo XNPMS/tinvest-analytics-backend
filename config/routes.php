@@ -12,6 +12,7 @@ use Mezzio\MiddlewareFactory;
 use Psr\Container\ContainerInterface;
 use Tinvest\Handler\AssetAllocationHandler;
 use Tinvest\Handler\DashboardSummaryHandler;
+use Tinvest\Handler\DividendCalendarHandler;
 use Tinvest\Handler\OnboardingAccountsHandler;
 use Tinvest\Handler\OnboardingTokenHandler;
 use Tinvest\Handler\InstrumentsPerformanceHandler;
@@ -35,4 +36,5 @@ return static function (Application $app, MiddlewareFactory $factory, ContainerI
 
     $app->get('/api/v1/portfolio/history', PortfolioHistoryHandler::class, 'api.portfolio.history');
     $app->get('/api/v1/portfolio/instruments', InstrumentsPerformanceHandler::class, 'api.portfolio.instruments');
+    $app->get('/api/v1/portfolio/dividends', DividendCalendarHandler::class, 'api.portfolio.dividends');
 };
