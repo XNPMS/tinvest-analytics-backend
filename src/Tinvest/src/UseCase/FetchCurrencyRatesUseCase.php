@@ -40,7 +40,6 @@ readonly class FetchCurrencyRatesUseCase
         }
 
         $rates = $this->apiService->getCurrencyRatesToRub($token, $foreignCurrencies);
-
         if (!$rates) {
             return;
         }

@@ -41,7 +41,7 @@ abstract class AbstractWorker implements QueueWorkerInterface
         $callback = function (AMQPMessage $msg) use ($options): void {
             try {
                 $payload = json_decode($msg->getBody(), true, 512, JSON_THROW_ON_ERROR);
-                $this->process(['message_id' => $msg->get('message_id') ?? ''] + $payload);
+                $this->process(['message_id' => $msg->get_properties()['message_id'] ?? ''] + $payload);
                 $msg->ack();
             } catch (\Throwable $e) {
                 $this->logger->error(sprintf(
@@ -50,7 +50,7 @@ abstract class AbstractWorker implements QueueWorkerInterface
                     static::class
                 ), [
                     'exception_message' => $e->getMessage(),
-                    'message_id' => $msg->get('message_id'),
+                    'message_id' => $msg->get_properties()['message_id'] ?? null,
                 ]);
 
                 $retryCount = $this->getRetryCount($msg);
@@ -61,7 +61,11 @@ abstract class AbstractWorker implements QueueWorkerInterface
                     $this->publishToFailureQueue($msg);
                 }
 
-                $msg->nack(false);
+                try {
+                    $msg->nack(false);
+                } catch (\Throwable) {
+                    // Соединение упало во время retry delay — брокер уже вернул сообщение в очередь
+                }
             }
         };
 
@@ -70,7 +74,14 @@ abstract class AbstractWorker implements QueueWorkerInterface
         $channel->basic_consume($this->queueName->value, '', false, false, false, false, $callback);
 
         while ($channel->is_consuming()) {
-            $channel->wait(null, true);
+            try {
+                $channel->wait(null, true);
+            } catch (\Throwable $e) {
+                $this->logger->error(sprintf('[%s] Worker %s channel error', date(self::DATE_FORMAT), static::class), [
+                    'error' => $e->getMessage(),
+                ]);
+                break;
+            }
         }
     }
 
@@ -93,13 +104,16 @@ abstract class AbstractWorker implements QueueWorkerInterface
         }
 
         $headers = new AMQPTable([self::HEADER_RETRY_COUNT => $retryCount]);
-        $newMsg = new AMQPMessage($msg->getBody(), [
-            'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
-            'application_headers' => $headers,
-        ]);
+        $properties = ['delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT, 'application_headers' => $headers];
+        $originalMessageId = $msg->get_properties()['message_id'] ?? null;
+        if ($originalMessageId !== null) {
+            $properties['message_id'] = $originalMessageId;
+        }
+        $newMsg = new AMQPMessage($msg->getBody(), $properties);
 
-        $channel = $msg->getChannel();
+        $channel = $this->client->getConnection(true)->channel();
         $channel->basic_publish($newMsg, '', $this->queueName->value);
+        $channel->close();
 
         $this->logger->info(sprintf(
             '[%s] Worker %s retry %d/%d scheduled',
@@ -117,7 +131,9 @@ abstract class AbstractWorker implements QueueWorkerInterface
             'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
         ]);
 
-        $msg->getChannel()->basic_publish($newMsg, '', $failureQueue);
+        $channel = $this->client->getConnection(true)->channel();
+        $channel->basic_publish($newMsg, '', $failureQueue);
+        $channel->close();
 
         $this->logger->warning(sprintf(
             '[%s] Worker %s message moved to failure queue %s',

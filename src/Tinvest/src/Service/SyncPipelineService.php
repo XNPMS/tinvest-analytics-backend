@@ -51,8 +51,7 @@ class SyncPipelineService
     }
 
     /**
-     * @throws InvalidArgumentException
-     * @throws JsonException
+     * @throws Throwable
      */
     public function run(SyncContext $ctx): void
     {
@@ -62,15 +61,17 @@ class SyncPipelineService
             $this->runRecalculate($ctx);
             $this->runBackfill($ctx);
             $this->runCapture($ctx);
-        } catch (Throwable | InvalidArgumentException $e) {
+            $this->publishCompleted($ctx);
+        } catch (Throwable $e) {
             $this->logger->error('Post-sync pipeline failed', [
                 'user_id' => $ctx->userId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTrace(),
             ]);
-        }
+            $this->markAllFailed($ctx, $e->getMessage());
 
-        $this->publishCompleted($ctx);
+            throw $e;
+        }
     }
 
     /**
@@ -80,6 +81,11 @@ class SyncPipelineService
      */
     private function runEnrich(SyncContext $ctx): void
     {
+        $this->logger->info('Enrich pipeline', [
+            'user_id' => $ctx->userId,
+            'account_ids' => $ctx->accountIds,
+        ]);
+
         [$start, $end] = self::STEP_RANGES['enrich_instruments'];
         $this->publishForAll($ctx, 'enrich_instruments', $start);
 
@@ -99,6 +105,11 @@ class SyncPipelineService
      */
     private function runFetchRates(SyncContext $ctx): void
     {
+        $this->logger->info('Fetch currency rates', [
+            'user_id' => $ctx->userId,
+            'account_ids' => $ctx->accountIds,
+        ]);
+
         $this->publishForAll($ctx, 'fetch_currency_rates', self::STEP_RANGES['fetch_currency_rates'][0]);
         $this->fetchCurrencyRatesUseCase->execute($ctx->token, $ctx->accountIds);
     }
@@ -175,6 +186,31 @@ class SyncPipelineService
                 100,
                 $process?->getTotalCount() ?? 0,
             );
+        }
+    }
+
+    private function markAllFailed(SyncContext $ctx, string $errorMessage): void
+    {
+        foreach ($ctx->syncedAccounts as $account) {
+            try {
+                $process = $this->syncProcessesService->findLatestByAccountId($account->getId());
+                if ($process !== null && $process->getStatus() !== SyncStatus::COMPLETED) {
+                    $this->syncProcessesService->markFailed($process, $errorMessage);
+                }
+                $this->progressPublisher->publish(
+                    $ctx->jobId,
+                    (int)$account->getAccountId(),
+                    $process?->getSyncedCount() ?? 0,
+                    SyncStatus::FAILED,
+                    0,
+                    $process?->getTotalCount() ?? 0,
+                );
+            } catch (Throwable | InvalidArgumentException $inner) {
+                $this->logger->error('Failed to mark sync process as failed', [
+                    'account_id' => $account->getId(),
+                    'error' => $inner->getMessage(),
+                ]);
+            }
         }
     }
 

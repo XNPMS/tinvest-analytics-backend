@@ -6,6 +6,7 @@ namespace Tinvest\UseCase;
 
 use JsonException;
 use Psr\Log\LoggerInterface;
+use Throwable;
 use Tinvest\Enum\LimitTokens;
 use Tinvest\Exception\TinvestGrpcException;
 use Tinvest\Repository\InstrumentRepository;
@@ -27,24 +28,23 @@ readonly class EnrichInstrumentsUseCase
      * Пропускает уже обогащённые записи (exchange IS NOT NULL).
      *
      * @param int[] $accountIds
-     * @throws JsonException|TinvestGrpcException
+     * @throws JsonException|TinvestGrpcException|Throwable
      */
     public function execute(string $token, array $accountIds, ?callable $onProgress = null): void
     {
         $instruments = $this->instrumentRepository->findUnenrichedByAccountIds($accountIds);
+        if ($instruments->isEmpty()) {
+            $this->logger->error('No instruments found', ['instruments' => $accountIds]);
 
-        if (!$instruments) {
             return;
         }
 
         $rateLimiter = new RateLimiter(LimitTokens::MAX_TOKENS_SERVICE_INSTRUMENTS);
         $enriched = [];
-        $total = count($instruments);
+        $total = count($instruments->toArray());
         $done = 0;
-
-        foreach ($instruments as ['figi' => $figi, 'asset_type' => $assetType]) {
+        foreach ($instruments->toArray() as ['figi' => $figi, 'asset_type' => $assetType]) {
             $rateLimiter->consume();
-
             $details = $this->apiService->getInstrumentDetails($token, $figi, $assetType);
 
             if ($details === null) {

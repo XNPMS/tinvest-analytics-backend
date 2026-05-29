@@ -8,6 +8,7 @@ use Psr\Log\LoggerInterface;
 use System\Queue\Client\RabbitMQ;
 use System\Queue\Enum\Workers;
 use System\Queue\Worker\AbstractWorker;
+use Throwable;
 use Tinvest\DTO\SyncContext;
 use Tinvest\Entity\TinvestAccount;
 use Tinvest\Message\AccountsMessage;
@@ -34,6 +35,9 @@ class SyncOnboardingAccountWorker extends AbstractWorker
         parent::__construct($client, $logger);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function process(array $payload): void
     {
         $message = AccountsMessage::fromArray($payload);
@@ -54,10 +58,8 @@ class SyncOnboardingAccountWorker extends AbstractWorker
 
         $token = $this->brokerTokenService->getDecryptedToken($user->getId());
         $syncedAccounts = [];
-
         foreach (array_unique($message->accountIds) as $accountId) {
             $account = $this->accountService->getTinvestAccountById((int)$accountId, $user->getId());
-
             if (!$account) {
                 $this->logger->error('Account not found', [
                     'account_id' => $accountId,
@@ -74,16 +76,28 @@ class SyncOnboardingAccountWorker extends AbstractWorker
         }
 
         if ($syncedAccounts) {
-            $this->pipeline->run(new SyncContext(
-                jobId: $jobId,
-                token: $token,
-                userId: $userId,
-                syncedAccounts: $syncedAccounts,
-                accountIds: array_map(static fn(TinvestAccount $a) => $a->getId(), $syncedAccounts),
-                brokerAccountIds: array_map(static fn(TinvestAccount $a) => (int)$a->getAccountId(), $syncedAccounts),
-            ));
+            $this->logger->info('Start pipeline synced accounts', ['synced_accounts' => $syncedAccounts]);
+            try {
+                $this->pipeline->run(new SyncContext(
+                    $jobId,
+                    $token,
+                    $userId,
+                    $syncedAccounts,
+                    array_map(static fn(TinvestAccount $a) => $a->getId(), $syncedAccounts),
+                    array_map(static fn(TinvestAccount $a) => (int)$a->getAccountId(), $syncedAccounts),
+                ));
+            } catch (Throwable $e) {
+                $this->userService->updateOnboardingStep($user, OnboardingStep::SYNC_FAILED);
+
+                throw $e;
+            }
         }
 
         $this->userService->updateOnboardingStep($user, OnboardingStep::READY);
+        $this->logger->info('Finished sync process', [
+            'job_id' => $jobId,
+            'user_id' => $userId,
+            'account_ids' => $message->accountIds,
+        ]);
     }
 }
