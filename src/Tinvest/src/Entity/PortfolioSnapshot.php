@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tinvest\Entity;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 use JsonException;
+use Tinvest\Collection\PositionsCollection;
 
 class PortfolioSnapshot extends Model
 {
@@ -57,19 +57,19 @@ class PortfolioSnapshot extends Model
         return (float)$this->getAttributeFromArray('cumulative_twr');
     }
 
-    /**
-     * @return Collection<int, PortfolioPosition>
-     * @throws JsonException
-     */
-    public function getPositions(): Collection
+    public function getPositions(): PositionsCollection
     {
         $json = (string)$this->getAttributeFromArray('positions_json') ?: null;
         if ($json === null) {
-            return new Collection();
+            return new PositionsCollection();
         }
 
-        $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        try {
+            $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            $data = [];
+        }
 
-        return Collection::make($data)->map(static fn(array $item) => PortfolioPosition::fromArray($item));
+        return PositionsCollection::make($data)->map(static fn(array $item) => PortfolioPosition::fromArray($item));
     }
 }
