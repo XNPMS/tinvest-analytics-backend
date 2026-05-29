@@ -15,9 +15,14 @@ readonly class TinvestSyncProcessesService
     {
     }
 
-    public function findActiveByAccountId(int $accountId): ?TinvestSyncProcesses
+    public function findByJobAndAccountId(string $jobId, int $accountId): ?TinvestSyncProcesses
     {
-        return $this->repository->findActiveByAccountId($accountId);
+        return $this->repository->findByJobAndAccountId($jobId, $accountId);
+    }
+
+    public function findActiveByAccountId(int $accountId, string $userId): ?TinvestSyncProcesses
+    {
+        return $this->repository->findActiveByAccountId($accountId, $userId);
     }
 
     public function findLatestByAccountId(int $accountId): ?TinvestSyncProcesses

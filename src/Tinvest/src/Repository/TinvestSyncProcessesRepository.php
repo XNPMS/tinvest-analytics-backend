@@ -32,13 +32,24 @@ readonly class TinvestSyncProcessesRepository extends AbstractEloquentRepository
             ->exists();
     }
 
-    public function findActiveByAccountId(int $accountId): ?TinvestSyncProcesses
+    public function findActiveByAccountId(int $accountId, string $userId): ?TinvestSyncProcesses
     {
         /** @var TinvestSyncProcesses */
         return $this->createQueryBuilder()
             ->where('account_id', '=', $accountId)
+            ->where('user_id', '=', $userId)
             ->whereIn('status', [SyncStatus::PENDING->value, SyncStatus::RUNNING->value])
             ->orderByDesc('id')
+            ->first();
+    }
+
+    public function findByJobAndAccountId(string $jobId, int $accountId): ?TinvestSyncProcesses
+    {
+        /** @var TinvestSyncProcesses */
+        return $this->createQueryBuilder()
+            ->where('job_id', '=', $jobId)
+            ->where('account_id', '=', $accountId)
+            ->limit(1)
             ->first();
     }
 }
