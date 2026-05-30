@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Capsule\Manager as Capsule;
-use Laminas\ServiceManager\ServiceManager;
 use Illuminate\Events\Dispatcher;
+use Laminas\ServiceManager\ServiceManager;
 
 $config = require __DIR__ . '/config.php';
 

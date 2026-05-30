@@ -7,8 +7,8 @@ namespace Auth\Config;
 final readonly class JwtConfig
 {
     public function __construct(
-        public string $privateKeyPath,
-        public string $publicKeyPath,
+        public string $privateKey,
+        public string $publicKey,
         public string $issuer,
         public string $audience,
     ) {

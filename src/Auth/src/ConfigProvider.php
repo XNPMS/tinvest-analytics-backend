@@ -33,13 +33,17 @@ class ConfigProvider
     public function getDependencies(): array
     {
         return [
-            'invokables' => [],
-            'factories'  => [
-                OAuthConfig::class => OAuthConfigFactory::class,
-                CookieConfig::class => CookieConfigFactory::class,
-                RegisterUserInputFilter::class => InputFilterAbstractFactory::class,
-                LoginUserInputFilter::class => InputFilterAbstractFactory::class,
-            ],
+            'factories' => $this->getFactories(),
+        ];
+    }
+
+    private function getFactories(): array
+    {
+        return [
+            OAuthConfig::class => OAuthConfigFactory::class,
+            CookieConfig::class => CookieConfigFactory::class,
+            RegisterUserInputFilter::class => InputFilterAbstractFactory::class,
+            LoginUserInputFilter::class => InputFilterAbstractFactory::class,
         ];
     }
 }

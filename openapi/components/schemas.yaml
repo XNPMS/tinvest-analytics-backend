@@ -1,0 +1,260 @@
+# ─── Общие примитивы ─────────────────────────────────────────────────────────
+
+ProblemDetails:
+  type: object
+  description: RFC 7807 Problem Details (mezzio-problem-details)
+  required:
+    - status
+    - detail
+  properties:
+    type:
+      type: string
+      example: "https://httpstatus.es/400"
+    title:
+      type: string
+      example: "Bad Request"
+    status:
+      type: integer
+      example: 400
+    detail:
+      type: string
+      example: "Invalid request data"
+
+ValidationError:
+  allOf:
+    - $ref: "#/ProblemDetails"
+    - type: object
+      properties:
+        errors_validation:
+          type: object
+          description: Ключи — имена полей, значения — словарь ошибок валидатора
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+          example:
+            email:
+              emailAddressInvalidFormat: "The input is not a valid email address"
+            password:
+              stringLengthTooShort: "The input is less than 8 characters long"
+
+# ─── Auth ─────────────────────────────────────────────────────────────────────
+
+UserAuthSuccess:
+  type: object
+  required:
+    - success
+  properties:
+    success:
+      type: object
+      required:
+        - email
+        - user_id
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        user_id:
+          type: integer
+          example: 1
+
+# ─── Tinvest ──────────────────────────────────────────────────────────────────
+
+TinvestAccount:
+  type: object
+  required:
+    - account_id
+    - name
+    - status
+    - type
+    - opened_date
+    - access_level
+  properties:
+    account_id:
+      type: string
+      description: Строковый идентификатор счёта в Tinkoff
+      example: "2054565444"
+    name:
+      type: string
+      example: "Мой брокерский счёт"
+    status:
+      type: integer
+      description: "AccountStatus (0=UNSPECIFIED, 1=NEW, 2=OPEN, 3=CLOSED)"
+      example: 2
+    type:
+      type: integer
+      description: "AccountType (0=UNSPECIFIED, 1=TINKOFF, 2=TINKOFF_IIS, 3=INVEST_BOX)"
+      example: 1
+    opened_date:
+      type: string
+      format: date-time
+      example: "2023-01-15 00:00:00"
+    access_level:
+      type: integer
+      description: "AccessLevel (0=UNSPECIFIED, 1=FULL_ACCESS, 2=READ_ONLY, 3=NO_ACCESS)"
+      example: 1
+    created_at:
+      type: string
+      format: date-time
+      example: "2024-01-01 12:00:00"
+    updated_at:
+      type: string
+      format: date-time
+      example: "2024-01-01 12:00:00"
+
+TinvestAccountsResponse:
+  type: object
+  required:
+    - accounts
+  properties:
+    accounts:
+      type: array
+      items:
+        $ref: "#/TinvestAccount"
+
+# ─── User ─────────────────────────────────────────────────────────────────────
+
+UserState:
+  type: object
+  required:
+    - id
+    - email
+    - onboarding_step
+    - has_broker_token
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    email:
+      type: string
+      format: email
+      example: "user@example.com"
+    onboarding_step:
+      type: string
+      enum:
+        - token_missing
+        - accounts_pending
+        - syncing
+        - ready
+      description: >
+        Текущий шаг онбординга:
+        `token_missing` — токен не добавлен,
+        `accounts_pending` — счета не выбраны,
+        `syncing` — синхронизация в процессе,
+        `ready` — платформа готова.
+      example: "ready"
+    has_broker_token:
+      type: boolean
+      description: Есть ли активный токен T-Invest API
+      example: true
+
+# ─── Dashboard ────────────────────────────────────────────────────────────────
+
+DashboardSummary:
+  type: object
+  required:
+    - total_value_rub
+    - unrealized_pnl_rub
+    - twr_percent
+    - dividends_rub
+  properties:
+    total_value_rub:
+      type: number
+      format: float
+      description: Суммарная стоимость портфеля по всем счетам в рублях
+      example: 1250000.50
+    unrealized_pnl_rub:
+      type: number
+      format: float
+      description: Нереализованный P&L (ожидаемая доходность открытых позиций) в рублях
+      example: 87500.25
+    twr_percent:
+      type: number
+      format: float
+      description: Накопленная доходность по методу TWR (Time-Weighted Return) в процентах
+      example: 12.34
+    dividends_rub:
+      type: number
+      format: float
+      description: Суммарные дивиденды по всем счетам в рублях
+      example: 15600.00
+
+PortfolioHistoryPoint:
+  type: object
+  required:
+    - date
+    - total_value_rub
+    - cash_flow_rub
+    - twr_factor
+  properties:
+    date:
+      type: string
+      format: date
+      example: "2024-01-15"
+    total_value_rub:
+      type: number
+      format: float
+      description: Стоимость портфеля на конец дня в рублях
+      example: 1012000.00
+    cash_flow_rub:
+      type: number
+      format: float
+      description: Внешний денежный поток за день (пополнения и выводы) в рублях
+      example: 0.00
+    twr_factor:
+      type: number
+      format: float
+      description: Дневной TWR-множитель (HPR = end_value / (prev_value + cash_flow))
+      example: 1.012
+
+PortfolioHistoryResponse:
+  type: object
+  required:
+    - data
+    - summary
+  properties:
+    data:
+      type: array
+      items:
+        $ref: "#/PortfolioHistoryPoint"
+    summary:
+      type: object
+      required:
+        - twr_percent
+        - first_value
+        - last_value
+      properties:
+        twr_percent:
+          type: number
+          format: float
+          description: Накопленная TWR-доходность за период в процентах
+          example: 1.20
+        first_value:
+          type: number
+          format: float
+          description: Стоимость портфеля на начало периода в рублях
+          example: 1000000.00
+        last_value:
+          type: number
+          format: float
+          description: Стоимость портфеля на конец периода в рублях
+          example: 1012000.00
+
+SyncJobResponse:
+  type: object
+  required:
+    - success
+    - job_id
+  properties:
+    success:
+      type: boolean
+      example: true
+    job_id:
+      type: string
+      description: >
+        Идентификатор задания синхронизации.
+        Формат: {user_id}-{timestamp}-{random_hex}.
+        Используется для подписки на WebSocket-прогресс.
+      example: "1-1735000000-abc123f4"

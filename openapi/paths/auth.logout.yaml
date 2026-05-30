@@ -1,0 +1,28 @@
+get:
+  tags:
+    - Auth
+  summary: Выход пользователя
+  operationId: authLogout
+  description: >
+    Инвалидирует refresh_token из cookie и сбрасывает оба cookie (access_token, refresh_token) через
+    Set-Cookie с expires в прошлом. Требует валидный access_token в cookie.
+  security:
+    - cookieAuth: []
+  responses:
+    "200":
+      description: Успешный выход. Cookies сброшены.
+      headers:
+        Set-Cookie:
+          description: Два заголовка с истёкшими cookies (access_token и refresh_token, Max-Age=0).
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"

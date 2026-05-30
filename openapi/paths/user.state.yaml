@@ -1,0 +1,29 @@
+get:
+  tags:
+    - User
+  summary: Получить текущее состояние пользователя
+  operationId: getUserState
+  description: >
+    Возвращает профиль авторизованного пользователя и его текущий шаг онбординга.
+
+    Используется для определения на каком экране находится пользователь:
+    - `token_missing` — нужно добавить токен T-Invest
+    - `accounts_pending` — нужно выбрать счета для синхронизации
+    - `syncing` — синхронизация операций в процессе
+    - `ready` — платформа готова к работе
+  security:
+    - cookieAuth: []
+  responses:
+    "200":
+      description: Состояние пользователя.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas.yaml#/UserState"
+          example:
+            id: "550e8400-e29b-41d4-a716-446655440000"
+            email: "user@example.com"
+            onboarding_step: "ready"
+            has_broker_token: true
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace User;
 
+use System\Factory\HandlerDelegatorFactory;
+use User\Handler\UserStateHandler;
+
 class ConfigProvider
 {
     /**
@@ -26,7 +29,15 @@ class ConfigProvider
     {
         return [
             'invokables' => [],
-            'factories'  => [],
+            'factories' => [],
+            'delegators' => $this->getDelegators(),
+        ];
+    }
+
+    private function getDelegators(): array
+    {
+        return [
+            UserStateHandler::class => [HandlerDelegatorFactory::class],
         ];
     }
 }

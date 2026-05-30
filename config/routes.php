@@ -10,41 +10,31 @@ use Auth\Middleware\AuthMiddleware;
 use Mezzio\Application;
 use Mezzio\MiddlewareFactory;
 use Psr\Container\ContainerInterface;
-
-/**
- * laminas-router route configuration
- *
- * @see https://docs.laminas.dev/laminas-router/
- *
- * Setup routes with a single request method:
- *
- * $app->get('/', App\Handler\HomePageHandler::class, 'home');
- * $app->post('/album', App\Handler\AlbumCreateHandler::class, 'album.create');
- * $app->put('/album/:id', App\Handler\AlbumUpdateHandler::class, 'album.put');
- * $app->patch('/album/:id', App\Handler\AlbumUpdateHandler::class, 'album.patch');
- * $app->delete('/album/:id', App\Handler\AlbumDeleteHandler::class, 'album.delete');
- *
- * Or with multiple request methods:
- *
- * $app->route('/contact', App\Handler\ContactHandler::class, ['GET', 'POST', ...], 'contact');
- *
- * Or handling all request methods:
- *
- * $app->route('/contact', App\Handler\ContactHandler::class)->setName('contact');
- *
- * or:
- *
- * $app->route(
- *     '/contact',
- *     App\Handler\ContactHandler::class,
- *     Mezzio\Router\Route::HTTP_METHOD_ANY,
- *     'contact'
- * );
- */
+use Tinvest\Handler\AssetAllocationHandler;
+use Tinvest\Handler\DashboardSummaryHandler;
+use Tinvest\Handler\DividendCalendarHandler;
+use Tinvest\Handler\OnboardingAccountsHandler;
+use Tinvest\Handler\OnboardingTokenHandler;
+use Tinvest\Handler\InstrumentsPerformanceHandler;
+use Tinvest\Handler\PortfolioHistoryHandler;
+use User\Handler\UserStateHandler;
 
 return static function (Application $app, MiddlewareFactory $factory, ContainerInterface $container): void {
     $app->get('/api/ping', PingHandler::class, 'api.ping');
+
     $app->post('/api/auth/register', RegisterUserHandler::class, 'api.register');
     $app->post('/api/auth/login', LoginUserHandler::class, 'api.login');
     $app->get('/api/auth/logout', [AuthMiddleware::class, LogoutUserHandler::class], 'api.logout');
+
+    $app->get('/api/v1/user/state', UserStateHandler::class, 'api.user.state');
+
+    $app->post('/api/v1/onboarding/token', OnboardingTokenHandler::class, 'api.onboarding.token');
+    $app->post('/api/v1/onboarding/accounts', OnboardingAccountsHandler::class, 'api.onboarding.accounts');
+
+    $app->get('/api/v1/dashboard/summary', DashboardSummaryHandler::class, 'api.dashboard.summary');
+    $app->get('/api/v1/dashboard/assets-allocation', AssetAllocationHandler::class, 'api.dashboard.assets-allocation');
+
+    $app->get('/api/v1/portfolio/history', PortfolioHistoryHandler::class, 'api.portfolio.history');
+    $app->get('/api/v1/portfolio/instruments', InstrumentsPerformanceHandler::class, 'api.portfolio.instruments');
+    $app->get('/api/v1/portfolio/dividends', DividendCalendarHandler::class, 'api.portfolio.dividends');
 };

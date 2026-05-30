@@ -1,0 +1,14 @@
+{
+  "name": "tinvest-analytics-openapi",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "redocly bundle openapi.yaml -o bundle/openapi.bundle.yaml",
+    "build:json": "redocly bundle openapi.yaml -o bundle/openapi.bundle.json",
+    "lint": "redocly lint openapi.yaml",
+    "preview": "redocly preview-docs openapi.yaml"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.25.0"
+  }
+}

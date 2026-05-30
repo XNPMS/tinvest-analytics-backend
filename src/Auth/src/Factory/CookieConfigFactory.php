@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Auth\Factory;
 
 use Auth\Config\CookieConfig;

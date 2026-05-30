@@ -8,16 +8,12 @@ use Laminas\InputFilter\InputFilterInterface;
 use Laminas\InputFilter\InputFilterPluginManager;
 use Laminas\InputFilter\InputInterface;
 use Laminas\ServiceManager\Factory\AbstractFactoryInterface;
-use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
 
 final class InputFilterAbstractFactory implements AbstractFactoryInterface
 {
     /**
-     * @param ContainerInterface $container
-     * @param $requestedName
-     * @return bool
+     * @inheritDoc
      */
     public function canCreate(ContainerInterface $container, $requestedName): bool
     {
@@ -29,18 +25,15 @@ final class InputFilterAbstractFactory implements AbstractFactoryInterface
     }
 
     /**
-     * @param ContainerInterface $container
-     * @param string $requestedName
-     * @param array|null $options
-     * @return InputFilterInterface|InputInterface
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
+     * @inheritDoc
      */
     public function __invoke(
         ContainerInterface $container,
         $requestedName,
         ?array $options = null
     ): InputFilterInterface|InputInterface {
-        return $container->get(InputFilterPluginManager::class)->get($requestedName, $options ?? []);
+        return $container
+            ->get(InputFilterPluginManager::class)
+            ->get($requestedName, $options ?? []);
     }
 }

@@ -14,7 +14,7 @@ readonly class UserRepository extends AbstractEloquentRepository
         return User::class;
     }
 
-    public function getUserById(int $userId): ?User
+    public function getUserById(string $userId): ?User
     {
         /** @var User */
         return $this->createQueryBuilder()

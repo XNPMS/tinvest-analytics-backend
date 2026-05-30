@@ -30,7 +30,12 @@
             "laminas/laminas-component-installer": true
         },
         "platform": {
-            "php": "8.2.99"
+            "php": "8.2.0"
+        },
+        "audit": {
+            "ignore": {
+                "PKSA-tcfz-w4fm-hhk9": "google/protobuf 3.x required by tinkoff-invest-api, upgrade to 4.x blocked by metaseller/tinkoff-invest-api-v2-php"
+            }
         }
     },
     "extra": {
@@ -40,8 +45,7 @@
                 "mezzio/mezzio-helpers",
                 "mezzio/mezzio-router",
                 "laminas/laminas-httphandlerrunner",
-                "mezzio/mezzio-laminasrouter",
-                "mezzio/mezzio-twigrenderer"
+                "mezzio/mezzio-laminasrouter"
             ]
         }
     },
@@ -63,25 +67,28 @@
         "laminas/laminas-pimple-config": "^1.6",
         "laminas/laminas-servicemanager": "^3.22",
         "laminas/laminas-stdlib": "^3.21",
+        "laminas/laminas-validator": "^2.65",
         "lcobucci/clock": "^3.3",
         "lcobucci/jwt": "^5.6",
+        "cboden/ratchet": "^0.4.4",
+        "metaseller/tinkoff-invest-api-v2-php": "^0.4.23",
         "mezzio/mezzio": "^3.23.1",
         "mezzio/mezzio-helpers": "^5.20",
         "mezzio/mezzio-laminasrouter": "^3.9.0",
         "mezzio/mezzio-problem-details": "^1.17",
-        "mezzio/mezzio-twigrenderer": "^2.15",
         "monolog/monolog": "^3.9",
+        "php-amqplib/php-amqplib": "^3.7",
         "ramsey/uuid": "^4.9",
         "symfony/console": "^5.4",
-        "vlucas/phpdotenv": "^5.6"
+        "vlucas/phpdotenv": "^5.6",
+        "ext-openssl": "*"
     },
     "require-dev": {
         "filp/whoops": "^2.15.4",
         "laminas/laminas-coding-standard": "^3.1.0",
         "laminas/laminas-development-mode": "^3.14.0",
         "mezzio/mezzio-tooling": "^2.12.0",
-        "phpunit/phpunit": "^11.5.42",
-        "roave/security-advisories": "dev-master"
+        "phpunit/phpunit": "^11.5.42"
     },
     "conflict": {
         "amphp/dns": "<2.4.0",
@@ -93,7 +100,8 @@
             "App\\": "src/App/src/",
             "System\\": "src/System/src/",
             "Auth\\": "src/Auth/src/",
-            "User\\": "src/User/src/"
+            "User\\": "src/User/src/",
+            "Tinvest\\": "src/Tinvest/src"
         }
     },
     "autoload-dev": {

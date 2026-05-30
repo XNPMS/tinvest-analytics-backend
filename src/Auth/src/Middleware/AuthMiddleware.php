@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Auth\Middleware;
 
+use Auth\DTO\TokenPair;
 use Auth\Exception\InvalidAccessTokenException;
 use Auth\Exception\InvalidRefreshTokenException;
 use Auth\Exception\UserRuntimeException;
@@ -14,8 +15,9 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use System\Exception\NotFoundException;
-use System\Exception\UnauthorizedException;
+use System\Exception\Http\NotFoundException;
+use System\Exception\Http\UnauthorizedException;
+use User\Entity\User;
 use User\Service\UserService;
 
 final readonly class AuthMiddleware implements MiddlewareInterface
@@ -74,7 +76,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
                 return $handler->handle($request);
             }
 
-            $request = $request->withAttribute('token_pair', $tokenPair);
+            $request = $request->withAttribute(TokenPair::class, $tokenPair);
 
             return $handler
                 ->handle($request)
@@ -88,6 +90,7 @@ final readonly class AuthMiddleware implements MiddlewareInterface
 
     /**
      * @throws InvalidAccessTokenException
+     * @throws NotFoundException
      */
     private function validateAccessToken(ServerRequestInterface $request, string $accessToken): ?array
     {
@@ -95,12 +98,14 @@ final readonly class AuthMiddleware implements MiddlewareInterface
             ($token = $this->tokenManager->validateAccessToken($accessToken))
             && ($userId = $token->claims()->get('sub'))
         ) {
+            if (!$user = $this->userService->getUserById((string)$userId)) {
+                // такого быть не должно
+                throw NotFoundException::create('User not found');
+            }
+
             return [
                 $token,
-                $request->withAttribute(
-                    'user_model',
-                    $this->userService->getUserById((int)$userId)
-                )
+                $request->withAttribute(User::class, $user),
             ];
         }
 

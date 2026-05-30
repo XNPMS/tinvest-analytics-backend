@@ -1,0 +1,47 @@
+<?php
+
+declare(strict_types=1);
+
+namespace System\Exception\Http;
+
+use Fig\Http\Message\StatusCodeInterface;
+use Laminas\InputFilter\InputFilterInterface;
+use Mezzio\ProblemDetails\Exception\CommonProblemDetailsExceptionTrait;
+use Mezzio\ProblemDetails\Exception\ProblemDetailsExceptionInterface;
+
+final class BadRequestException extends \Exception implements ProblemDetailsExceptionInterface
+{
+    use CommonProblemDetailsExceptionTrait;
+
+    /**
+     * @param non-empty-string $detail
+     * @param array<string, mixed> $additional
+     */
+    public static function create(string $detail, string $type = '', string $title = '', array $additional = []): self
+    {
+        $exception = new self();
+
+        $exception->type = $type;
+        $exception->detail = $detail;
+        $exception->status = StatusCodeInterface::STATUS_BAD_REQUEST;
+        $exception->title = $title;
+        $exception->additional = $additional;
+
+        return $exception;
+    }
+
+    public static function fromInputFilter(InputFilterInterface $inputFilter): self
+    {
+        $exception = new self();
+
+        $exception->type = '';
+        $exception->title = '';
+        $exception->detail = 'Invalid request data';
+        $exception->status = StatusCodeInterface::STATUS_BAD_REQUEST;
+        $exception->additional = [
+            'errors_validation' => $inputFilter->getMessages(),
+        ];
+
+        return $exception;
+    }
+}

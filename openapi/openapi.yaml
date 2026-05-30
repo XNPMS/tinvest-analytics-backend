@@ -1,0 +1,118 @@
+openapi: "3.0.3"
+
+info:
+  title: Tinvest Analytics API
+  version: "1.0.0"
+  description: >
+    REST API для платформы аналитики T-Invest портфеля.
+
+    ## Аутентификация
+
+    Используется cookie-based JWT.
+    После логина/регистрации устанавливаются два cookie:
+    - `access_token` — короткоживущий JWT (15 мин), используется для всех защищённых ручек
+    - `refresh_token` — долгоживущий httpOnly cookie (30 дней)
+
+    ## WebSocket
+
+    После запуска синхронизации подключитесь к `wss://host/ws` и отправьте:
+    ```json
+    {"action": "subscribe", "job_id": "<job_id из onboarding/accounts>"}
+    ```
+    Сервер будет рассылать обновления прогресса раз в секунду.
+
+servers:
+  - url: http://localhost:8080
+    description: Локальная разработка
+
+tags:
+  - name: System
+    description: Служебные ручки
+  - name: Auth
+    description: Регистрация, вход и выход
+  - name: User
+    description: Профиль и состояние пользователя
+  - name: Onboarding
+    description: Подключение T-Invest токена и выбор счетов
+  - name: Dashboard
+    description: Аналитика портфеля
+
+security: []
+
+components:
+  securitySchemes:
+    cookieAuth:
+      $ref: "./components/securitySchemes.yaml#/cookieAuth"
+  schemas:
+    ProblemDetails:
+      $ref: "./components/schemas.yaml#/ProblemDetails"
+    ValidationError:
+      $ref: "./components/schemas.yaml#/ValidationError"
+    UserAuthSuccess:
+      $ref: "./components/schemas.yaml#/UserAuthSuccess"
+    UserState:
+      $ref: "./components/schemas.yaml#/UserState"
+    TinvestAccount:
+      $ref: "./components/schemas.yaml#/TinvestAccount"
+    TinvestAccountsResponse:
+      $ref: "./components/schemas.yaml#/TinvestAccountsResponse"
+    SyncJobResponse:
+      $ref: "./components/schemas.yaml#/SyncJobResponse"
+    DashboardSummary:
+      $ref: "./components/schemas.yaml#/DashboardSummary"
+    PortfolioHistoryPoint:
+      $ref: "./components/schemas.yaml#/PortfolioHistoryPoint"
+    PortfolioHistoryResponse:
+      $ref: "./components/schemas.yaml#/PortfolioHistoryResponse"
+  responses:
+    BadRequest:
+      $ref: "./components/responses.yaml#/BadRequest"
+    Unauthorized:
+      $ref: "./components/responses.yaml#/Unauthorized"
+    Forbidden:
+      $ref: "./components/responses.yaml#/Forbidden"
+    NotFound:
+      $ref: "./components/responses.yaml#/NotFound"
+    Conflict:
+      $ref: "./components/responses.yaml#/Conflict"
+
+# ─── Endpoints ────────────────────────────────────────────────────────────────
+# Каждый путь описан в отдельном файле openapi/paths/*.yaml
+
+paths:
+  /api/ping:
+    $ref: "./paths/ping.yaml"
+
+  /api/auth/register:
+    $ref: "./paths/auth.register.yaml"
+
+  /api/auth/login:
+    $ref: "./paths/auth.login.yaml"
+
+  /api/auth/logout:
+    $ref: "./paths/auth.logout.yaml"
+
+  /api/v1/user/state:
+    $ref: "./paths/user.state.yaml"
+
+  /api/v1/onboarding/token:
+    $ref: "./paths/onboarding.token.yaml"
+
+  /api/v1/onboarding/accounts:
+    $ref: "./paths/onboarding.accounts.yaml"
+
+  /api/v1/dashboard/summary:
+    $ref: "./paths/dashboard.summary.yaml"
+
+  /api/v1/portfolio/history:
+    $ref: "./paths/portfolio.history.yaml"
+
+
+## Команды:
+#  cd openapi
+#  npm install
+#
+#  npm run lint        # валидация спецификации
+#  npm run build       # → bundle/openapi.bundle.yaml (один файл, все $ref инлайнены)
+#  npm run build:json  # → bundle/openapi.bundle.json
+#  npm run preview     # локальный предпросмотр Redoc на http://localhost:8080

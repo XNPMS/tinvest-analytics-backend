@@ -104,8 +104,8 @@ final readonly class InputFilterMessageResolver
         $params = [$input->getName()];
         $options = $validator->getOptions();
         // Для разных типов валидаторов подставляем разные параметры
-        switch (get_class($validator)) {
-            case \Laminas\Validator\StringLength::class:
+        switch ($validator::class) {
+            case StringLength::class:
                 switch (true) {
                     case $code === StringLength::TOO_SHORT:
                         if (isset($options['min']) && is_scalar($options['min'])) {

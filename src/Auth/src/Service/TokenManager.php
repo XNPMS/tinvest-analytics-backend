@@ -32,8 +32,8 @@ readonly class TokenManager
     ) {
         $this->jwtConfig = Configuration::forAsymmetricSigner(
             new Sha256(),
-            InMemory::file($this->oauthConfig->jwtConfig->privateKeyPath),
-            InMemory::file($this->oauthConfig->jwtConfig->publicKeyPath)
+            InMemory::base64Encoded($this->oauthConfig->jwtConfig->privateKey),
+            InMemory::base64Encoded($this->oauthConfig->jwtConfig->publicKey)
         );
     }
 
@@ -77,13 +77,15 @@ readonly class TokenManager
     {
         $token = $this->refreshTokenService->getRefreshTokenByRefreshToken($rawRefresh);
 
-        switch (true) {
-            case !$token:
-                throw new InvalidRefreshTokenException('Refresh token not found');
-            case $token->isRevoked():
-                throw new InvalidRefreshTokenException('Refresh token revoked');
-            case $token->isExpired():
-                throw new InvalidRefreshTokenException('Refresh token expired');
+        $message = match (true) {
+            !$token => 'Refresh token not found',
+            $token->isRevoked() => 'Refresh token revoked',
+            $token->isExpired() => 'Refresh token expired',
+            default => null,
+        };
+
+        if ($message !== null) {
+            throw new InvalidRefreshTokenException($message);
         }
 
         return $token;
@@ -99,11 +101,11 @@ readonly class TokenManager
 
             $constraints = [
                 new SignedWith($this->jwtConfig->signer(), $this->jwtConfig->verificationKey()),
-                new LooseValidAt(SystemClock::fromSystemTimezone())
+                new LooseValidAt(SystemClock::fromSystemTimezone()),
             ];
 
             if (!$this->jwtConfig->validator()->validate($token, ...$constraints)) {
-                throw new InvalidAccessTokenException();
+                throw new InvalidAccessTokenException('Invalid access token');
             }
 
             return $token;

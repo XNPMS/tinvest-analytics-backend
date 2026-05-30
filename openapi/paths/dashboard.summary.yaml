@@ -1,0 +1,29 @@
+get:
+  tags:
+    - Dashboard
+  summary: Сводная аналитика по всем счетам
+  operationId: getDashboardSummary
+  description: >
+    Возвращает агрегированные показатели по всем синхронизированным счетам пользователя:
+    суммарная стоимость портфеля, нереализованный P&L, доходность по методу TWR и дивиденды.
+
+    Возвращает `204 No Content` если нет синхронизированных счетов
+    или снэпшоты ещё не были построены.
+  security:
+    - cookieAuth: []
+  responses:
+    "200":
+      description: Сводные показатели портфеля.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas.yaml#/DashboardSummary"
+          example:
+            total_value_rub: 1250000.50
+            unrealized_pnl_rub: 87500.25
+            twr_percent: 12.34
+            dividends_rub: 15600.00
+    "204":
+      description: Нет данных — счета не синхронизированы или снэпшоты не построены.
+    "401":
+      $ref: "../components/responses.yaml#/Unauthorized"

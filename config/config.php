@@ -18,8 +18,11 @@ $aggregator = new ConfigAggregator([
     \Laminas\Filter\ConfigProvider::class,
     \Laminas\Cache\ConfigProvider::class,
     \Laminas\Cache\Storage\Adapter\Memcached\ConfigProvider::class,
-    \Mezzio\Twig\ConfigProvider::class,
-    \Mezzio\Tooling\ConfigProvider::class,
+    class_exists(\Mezzio\Tooling\ConfigProvider::class)
+        ? \Mezzio\Tooling\ConfigProvider::class
+        : function (): array {
+            return [];
+        },
     \Mezzio\Router\LaminasRouter\ConfigProvider::class,
     \Laminas\Router\ConfigProvider::class,
     \Laminas\HttpHandlerRunner\ConfigProvider::class,
@@ -43,6 +46,7 @@ $aggregator = new ConfigAggregator([
     System\ConfigProvider::class,
     Auth\ConfigProvider::class,
     User\ConfigProvider::class,
+    Tinvest\ConfigProvider::class,
 
     // Load application config in a pre-defined order in such a way that local settings
     // overwrite global settings. (Loaded as first to last):

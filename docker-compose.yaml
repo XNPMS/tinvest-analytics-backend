@@ -1,6 +1,9 @@
 version: '3.8'
 
 x-php-tmpl: &php-tmpl
+  build:
+    context: .
+    dockerfile: Dockerfile
   image: tinvest-analytics-backend:latest
   restart: always
   tty: true
@@ -9,6 +12,7 @@ x-php-tmpl: &php-tmpl
     - .env
   volumes:
     - .:/var/www/application
+    - ./docker/php/conf.d/dev.ini:/usr/local/etc/php/conf.d/dev.ini
 
 services:
   # PHP FPM Backend
@@ -29,8 +33,8 @@ services:
       - ./docker/nginx/templates/:/etc/nginx/templates/
       - ./public/:/var/www/application/public/
     ports:
-      - "9000:9000"
-      - "443:443"
+      - '80:80'
+      - '443:443'
 
   # MySQL Service
   tinvest-analytics-mysql:
@@ -39,7 +43,7 @@ services:
     restart: always
     tty: true
     ports:
-      - "3307:3306"
+      - '3306:3306'
     environment:
       MYSQL_DATABASE: ${DATABASE_NAME}
       MYSQL_USER: ${DATABASE_USERNAME}
@@ -50,14 +54,24 @@ services:
       - applicationMysqlData:/var/lib/mysql
       - applicationMysqlFiles:/var/lib/mysql-files
 
-  # Queue Service
-  tinvest-analytics-beanstalkd:
-    image: schickling/beanstalkd:latest
-    container_name: tinvest-analytics-beanstalkd
-    restart: always
-    tty: true
-    ports:
-      - "11300:11300"
+  # RabbitMQ Service
+  tinvest-analytics-rabbitmq:
+   image: rabbitmq:3.11-management
+   container_name: tinvest-analytics-rabbitmq
+   restart: always
+   tty: true
+   ports:
+      - '5672:5672'
+      - '15672:15672'
+   environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+   healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   # Memcached Service
   tinvest-analytics-memcached:
@@ -66,9 +80,35 @@ services:
     restart: always
     tty: true
     ports:
-      - "11211:11211"
+      - '11211:11211'
     environment:
       SERVICE_NAME: memcached
+
+  # WebSocket Server
+  tinvest-analytics-websocket:
+    <<: *php-tmpl
+    container_name: tinvest-analytics-websocket
+    ports:
+      - '${WS_PORT:-8081}:${WS_PORT:-8081}'
+    command: ["php", "vendor/bin/laminas", "websocket:server"]
+
+  # Worker Service
+  tinvest-analytic-sync-onboarding-accounts:
+    <<: *php-tmpl
+    container_name: tinvest-analytic-sync-onboarding-accounts
+    depends_on:
+      tinvest-analytics-rabbitmq:
+        condition: service_healthy
+    command: [
+        "php",
+        "vendor/bin/laminas",
+        "system:queue:worker",
+        "--queue",
+        "sync.onboarding.accounts",
+        "--max-retries=3",
+        "--retry-delay=60",
+        "--save-failure"
+    ]
 
 # Docker Volumes
 volumes:

@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Builder as QueryBuilder;
 
 abstract readonly class AbstractEloquentRepository
 {
+    protected const DATETIME_FORMAT = 'Y-m-d H:i:s';
+    protected const MAX_LIMIT = 500;
+
     protected string $model;
 
     /**

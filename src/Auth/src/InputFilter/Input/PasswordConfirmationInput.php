@@ -6,8 +6,8 @@ namespace Auth\InputFilter\Input;
 
 use Laminas\Filter\StringTrim;
 use Laminas\InputFilter\Input;
-use Laminas\Validator\NotEmpty;
 use Laminas\Validator\Identical;
+use Laminas\Validator\NotEmpty;
 
 class PasswordConfirmationInput extends Input
 {

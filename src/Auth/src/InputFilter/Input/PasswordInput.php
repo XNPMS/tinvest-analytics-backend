@@ -7,14 +7,14 @@ namespace Auth\InputFilter\Input;
 use Laminas\Filter\StringTrim;
 use Laminas\InputFilter\Input;
 use Laminas\Validator\NotEmpty;
-use Laminas\Validator\StringLength;
 use Laminas\Validator\Regex;
+use Laminas\Validator\StringLength;
 
 class PasswordInput extends Input
 {
     private const MAX_LENGTH_PASSWORD = 128;
     private const MIN_LENGTH_PASSWORD = 8;
-    private const PATTERN_PASSWORD = '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/';
+    private const PATTERN_PASSWORD = '/^\S+$/';
 
     public function __construct(?string $name = null, bool $isRequired = true)
     {
